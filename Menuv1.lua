@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition Fixed
+-- Roblox Mobile Hub - Ultimate Custom Edition Fixed (UI Load Guaranteed)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -63,15 +63,37 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- KHUNG GIAO DIỆN CHÍNH (UI)
+-- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH (UI PARENT FIX)
 ---------------------------------------------------------
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui"))
+local function GetSafeParent()
+    local success, parent = pcall(function()
+        if gethui then
+            return gethui()
+        elseif game:GetService("CoreGui") then
+            return game:GetService("CoreGui")
+        end
+    end)
+    if success and parent then
+        return parent
+    end
+    return LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local TargetParent = GetSafeParent()
+
+-- Xóa Hub cũ nếu tồn tại
+if TargetParent:FindFirstChild("UltimateMobileHub") then
+    TargetParent.UltimateMobileHub:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "UltimateMobileHub"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = TargetParent
 
 -- Nút Bật/Tắt Menu Chính
 local ToggleMenuBtn = Instance.new("TextButton", ScreenGui)
-ToggleMenuBtn.Size = UDim2.new(0, 80, 0, 35)
+ToggleMenuBtn.Size = UDim2.new(0, 90, 0, 35)
 ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
 ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ToggleMenuBtn.Text = "MENU HUB"
@@ -251,7 +273,9 @@ local function loadServerPlayers()
 
         local img = Instance.new("ImageLabel", item)
         img.Size = UDim2.new(0, 30, 0, 30)
-        img.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        pcall(function()
+            img.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end)
 
         local nameLbl = Instance.new("TextLabel", item)
         nameLbl.Position = UDim2.new(0, 35, 0, 0)
@@ -291,26 +315,30 @@ local HopBtn = Instance.new("TextButton", ServerPage)
 HopBtn.Size = UDim2.new(0.98, 0, 0, 30)
 HopBtn.Text = "Hop Server (Ngẫu nhiên)"
 HopBtn.MouseButton1Click:Connect(function()
-    local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    local list = HttpService:JSONDecode(game:HttpGet(api)).data
-    if list and #list > 0 then
-        local s = list[math.random(1, #list)]
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-    end
+    pcall(function()
+        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local list = HttpService:JSONDecode(game:HttpGet(api)).data
+        if list and #list > 0 then
+            local s = list[math.random(1, #list)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+        end
+    end)
 end)
 
 local LowHopBtn = Instance.new("TextButton", ServerPage)
 LowHopBtn.Size = UDim2.new(0.98, 0, 0, 30)
 LowHopBtn.Text = "Join Low Server (1-5 Người)"
 LowHopBtn.MouseButton1Click:Connect(function()
-    local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    local list = HttpService:JSONDecode(game:HttpGet(api)).data
-    for _, s in pairs(list) do
-        if s.playing >= 1 and s.playing <= 5 and s.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-            break
+    pcall(function()
+        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local list = HttpService:JSONDecode(game:HttpGet(api)).data
+        for _, s in pairs(list) do
+            if s.playing >= 1 and s.playing <= 5 and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                break
+            end
         end
-    end
+    end)
 end)
 
 ---------------------------------------------------------
@@ -350,17 +378,19 @@ FOVInput.FocusLost:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 3. TAB MOVEMENT (BAY TẢI SCRIPT NGOÀI & SHIFT LOCK CHUẨN ROBLOX)
+-- 3. TAB MOVEMENT (FLY V3 & SHIFTLOCK ROBLOX PC)
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
 addToggleWithInput(MovePage, "Trọng Lực (Gravity)", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
 addSimpleToggle(MovePage, "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
 
--- Bật Script Bay FlyGuiV3
+-- Tải Script FlyGuiV3 An Toàn
 addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
     if state then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+        end)
     end
 end)
 
@@ -369,7 +399,7 @@ local ShiftLockFloatBtn = Instance.new("ImageButton", ScreenGui)
 ShiftLockFloatBtn.Size = UDim2.new(0, 50, 0, 50)
 ShiftLockFloatBtn.Position = UDim2.new(0.85, 0, 0.5, 0)
 ShiftLockFloatBtn.BackgroundTransparency = 1
-ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off) chuẩn Roblox
+ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off)
 ShiftLockFloatBtn.Visible = false
 ShiftLockFloatBtn.Active = true
 ShiftLockFloatBtn.Draggable = true
@@ -388,10 +418,10 @@ ShiftLockFloatBtn.MouseButton1Click:Connect(function()
     shiftLockEnabled = not shiftLockEnabled
     
     if shiftLockEnabled then
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923868" -- Texture ShiftLock Bật (On) chuẩn Roblox
+        ShiftLockFloatBtn.Image = "rbxassetid://10734923868" -- Texture ShiftLock Bật (On)
         ShiftLockCrosshair.Visible = true
     else
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off)
+        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
         ShiftLockCrosshair.Visible = false
     end
 end)
@@ -496,7 +526,9 @@ SearchBox.FocusLost:Connect(function()
     end
     
     if targetSelectedPlayer then
-        AvatarImg.Image = Players:GetUserThumbnailAsync(targetSelectedPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        pcall(function()
+            AvatarImg.Image = Players:GetUserThumbnailAsync(targetSelectedPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end)
         InfoLabel.Text = string.format("Tên: %s\n@User: %s\nTuổi Acc: %d ngày", targetSelectedPlayer.DisplayName, targetSelectedPlayer.Name, targetSelectedPlayer.AccountAge)
         Settings.TargetPlayerName = targetSelectedPlayer.Name
     else
@@ -536,7 +568,7 @@ TargetESPBtn.MouseButton1Click:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 7. TAB AUTO CLICK & CONTROLLER
+-- 7. TAB AUTO CLICK
 ---------------------------------------------------------
 local AutoClickPoints = {}
 
@@ -673,7 +705,7 @@ ACRunBtn.MouseButton1Click:Connect(function()
                 end
 
                 for i, p in ipairs(AutoClickPoints) do
-                    if not Settings.AC_Running me break end
+                    if not Settings.AC_Running then break end
                     local pos = p.Frame.AbsolutePosition + (p.Frame.AbsoluteSize / 2)
                     VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, true, game, 0)
                     task.wait(0.05)
@@ -736,7 +768,6 @@ local function getHealthColor(percent)
     end
 end
 
--- Tự động quét và cập nhật ESP định kỳ
 local function ensureESP(p)
     if p == LocalPlayer or not p.Character then return end
     local char = p.Character
@@ -779,7 +810,7 @@ end
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- Cập nhật ESP
+    -- ESP Loop
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             ensureESP(p)
@@ -828,7 +859,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Movement Mechanics
+    -- Movement Mechanic
     local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         local hum = char:FindFirstChildOfClass("Humanoid")
@@ -841,21 +872,20 @@ RunService.RenderStepped:Connect(function()
         end
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
 
-        -- Xử lý Shift Lock Chuẩn Roblox PC
+        -- Shift Lock Camera Control
         if shiftLockEnabled and hrp then
             hum.AutoRotate = false
             local lookPos = Camera.CFrame.LookVector
             local rootPos = hrp.Position
             hrp.CFrame = CFrame.new(rootPos, rootPos + Vector3.new(lookPos.X, 0, lookPos.Z))
             
-            -- Đẩy camera về dạng khóa lệch vai nhẹ chuẩn PC
             Camera.CFrame = Camera.CFrame * CFrame.new(1.7, 0, 0)
         else
             hum.AutoRotate = true
         end
     end
 
-    -- Logic Aimbot
+    -- Aimbot Loop
     if Settings.AimbotMode ~= "None" then
         local target = nil
         local shortestDist = math.huge

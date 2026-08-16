@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition Fixed & Upgraded
+-- Roblox Mobile Hub - Ultimate Custom Edition Fixed & Upgraded (Responsive UI)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -27,8 +27,6 @@ local Settings = {
     InfJumpActive = false,
     GravityActive = false,
     GravityVal = 196.2,
-    
-    ShiftLockActive = false,
     
     FullBrightActive = false,
     UnlockCamActive = false,
@@ -70,7 +68,7 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH
+-- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH (ĐÃ CẢI TIẾN TAB SCROLL)
 ---------------------------------------------------------
 local function GetSafeParent()
     local success, parent = pcall(function()
@@ -109,13 +107,13 @@ ToggleMenuBtn.Active = true
 ToggleMenuBtn.Draggable = true
 
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 500, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -250, 0.4, -130)
+MainFrame.Size = UDim2.new(0, 480, 0, 270)
+MainFrame.Position = UDim2.new(0.5, -240, 0.4, -135)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Viền Menu to giúp dễ di chuyển / kéo thả
+-- Viền Menu
 local MainFrameStroke = Instance.new("UIStroke", MainFrame)
 MainFrameStroke.Color = Color3.fromRGB(0, 170, 255)
 MainFrameStroke.Thickness = 3
@@ -137,29 +135,45 @@ Title.Text = "MOBILE ADVANCED HUB"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Navigation Bar (6 Tabs)
-local TabBar = Instance.new("Frame", MainFrame)
-TabBar.Position = UDim2.new(0, 0, 0, 30)
-TabBar.Size = UDim2.new(1, 0, 0, 30)
-TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+---------------------------------------------------------
+-- THANH NGUYÊN MẪU TAB CUỘN NGANG (FIX LỖI TRÀN TAB)
+---------------------------------------------------------
+local TabBarScroll = Instance.new("ScrollingFrame", MainFrame)
+TabBarScroll.Position = UDim2.new(0, 0, 0, 30)
+TabBarScroll.Size = UDim2.new(1, 0, 0, 35)
+TabBarScroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabBarScroll.CanvasSize = UDim2.new(0, 0, 0, 0) -- Tự điều chỉnh tự động qua UIListLayout
+TabBarScroll.ScrollBarThickness = 0 -- Ẩn thanh cuộn cho đẹp mắt, vuốt bình thường
+TabBarScroll.ScrollingDirection = Enum.ScrollingDirection.Horizontal
 
-local TabLayout = Instance.new("UIListLayout", TabBar)
+local TabLayout = Instance.new("UIListLayout", TabBarScroll)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Padding = UDim.new(0, 4)
+
+-- Tự động tính kích thước cuộn dựa trên số lượng nút Tab
+TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    TabBarScroll.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 10, 0, 0)
+end)
 
 local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Position = UDim2.new(0, 0, 0, 60)
-ContentFrame.Size = UDim2.new(1, 0, 1, -60)
+ContentFrame.Position = UDim2.new(0, 0, 0, 65)
+ContentFrame.Size = UDim2.new(1, 0, 1, -65)
 ContentFrame.BackgroundTransparency = 1
 
 local Pages = {}
 
 local function createTab(name, order)
-    local btn = Instance.new("TextButton", TabBar)
-    btn.Size = UDim2.new(1/6, 0, 1, 0)
+    local btn = Instance.new("TextButton", TabBarScroll)
+    btn.Size = UDim2.new(0, 85, 1, 0) -- Chiều rộng cố định cho mỗi nút Tab
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.TextSize = 10
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.TextSize = 11
+    btn.LayoutOrder = order
+
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 4)
 
     local page = Instance.new("ScrollingFrame", ContentFrame)
     page.Size = UDim2.new(1, -10, 1, -10)
@@ -174,13 +188,22 @@ local function createTab(name, order)
 
     Pages[name] = page
 
+    if order == 1 then
+        btn.TextColor3 = Color3.fromRGB(255, 255, 0)
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end
+
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(ContentFrame:GetChildren()) do p.Visible = false end
-        for _, b in pairs(TabBar:GetChildren()) do
-            if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(180, 180, 180) end
+        for _, b in pairs(TabBarScroll:GetChildren()) do
+            if b:IsA("TextButton") then 
+                b.TextColor3 = Color3.fromRGB(180, 180, 180)
+                b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            end
         end
         page.Visible = true
         btn.TextColor3 = Color3.fromRGB(255, 255, 0)
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
     return page
 end
@@ -390,7 +413,7 @@ FOVInput.FocusLost:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 3. TAB MOVEMENT & FIXED SHIFTLOCK
+-- 3. TAB MOVEMENT & SỬA NÚT SHIFTLOCK THEO YÊU CẦU
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
@@ -405,45 +428,13 @@ addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
     end
 end)
 
--- Shift Lock UI (Fixed Parent)
-local ShiftLockFloatBtn = Instance.new("ImageButton", ScreenGui)
-ShiftLockFloatBtn.Name = "ShiftLockFloatBtn"
-ShiftLockFloatBtn.Size = UDim2.new(0, 50, 0, 50)
-ShiftLockFloatBtn.Position = UDim2.new(0.85, 0, 0.5, 0)
-ShiftLockFloatBtn.BackgroundTransparency = 1
-ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
-ShiftLockFloatBtn.Visible = false
-ShiftLockFloatBtn.Active = true
-ShiftLockFloatBtn.Draggable = true
-
-local ShiftLockCrosshair = Instance.new("ImageLabel", ScreenGui)
-ShiftLockCrosshair.Name = "ShiftLockCrosshair"
-ShiftLockCrosshair.Size = UDim2.new(0, 32, 0, 32)
-ShiftLockCrosshair.Position = UDim2.new(0.5, -16, 0.5, -16)
-ShiftLockCrosshair.BackgroundTransparency = 1
-ShiftLockCrosshair.Image = "rbxassetid://11822818625"
-ShiftLockCrosshair.Visible = false
-
-local shiftLockEnabled = false
-
-ShiftLockFloatBtn.MouseButton1Click:Connect(function()
-    shiftLockEnabled = not shiftLockEnabled
-    if shiftLockEnabled then
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923868"
-        ShiftLockCrosshair.Visible = true
-    else
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
-        ShiftLockCrosshair.Visible = false
-    end
-end)
-
-addSimpleToggle(MovePage, "Bật Nút Shift Lock Nổi Chuẩn PC", function(state)
-    Settings.ShiftLockActive = state
-    ShiftLockFloatBtn.Visible = state
-    if not state then
-        shiftLockEnabled = false
-        ShiftLockCrosshair.Visible = false
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
+-- Sửa nút ShiftLock theo đúng Script yêu cầu
+local shiftLockExecuted = false
+addSimpleToggle(MovePage, "Kích Hoạt Shift Lock Universal", function(state)
+    if state then
+        pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Shift-Lock-121871"))()
+        end)
     end
 end)
 
@@ -604,7 +595,6 @@ ACAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 ACAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ACAddBtn.TextSize = 18
 
--- Nút Xóa Điểm Cuối Nằm Ngay Dưới Nút Thêm (+)
 local ACDelBtn = Instance.new("TextButton", ACBar)
 ACDelBtn.Size = UDim2.new(0, 40, 0, 30)
 ACDelBtn.Text = "-"
@@ -612,7 +602,6 @@ ACDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
 ACDelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ACDelBtn.TextSize = 18
 
--- Nút Xóa Tất Cả Nằm Bên Dưới
 local ACClearBtn = Instance.new("TextButton", ACBar)
 ACClearBtn.Size = UDim2.new(0, 40, 0, 30)
 ACClearBtn.Text = "🗑"
@@ -790,10 +779,9 @@ addSimpleToggle(MiscPage, "Bật Thanh Auto Click Nổi", function(state)
     end
 end)
 
-
 ------------------ HỆ THỐNG WAYPOINT CAO CẤP ------------------
-local WaypointList = {} -- Danh sách chứa Part + CFrame
-local SavedWaypoints = {} -- Lưu vào file
+local WaypointList = {}
+local SavedWaypoints = {}
 
 local WPFolder = workspace:FindFirstChild("MobileHubWaypoints") or Instance.new("Folder", workspace)
 WPFolder.Name = "MobileHubWaypoints"
@@ -810,35 +798,30 @@ local WPBarLayout = Instance.new("UIListLayout", WPBar)
 WPBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 WPBarLayout.Padding = UDim.new(0, 5)
 
--- Nút 1: Đặt điểm Waypoint
 local WPAddBtn = Instance.new("TextButton", WPBar)
 WPAddBtn.Size = UDim2.new(0, 40, 0, 30)
 WPAddBtn.Text = "📍+"
 WPAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 WPAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Nút 2: Chạy / Dừng Waypoint
 local WPRunBtn = Instance.new("TextButton", WPBar)
 WPRunBtn.Size = UDim2.new(0, 40, 0, 30)
 WPRunBtn.Text = "▶"
 WPRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
 WPRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Nút 3: Xóa điểm cuối
 local WPDelBtn = Instance.new("TextButton", WPBar)
 WPDelBtn.Size = UDim2.new(0, 40, 0, 30)
 WPDelBtn.Text = "📍-"
 WPDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
 WPDelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Nút 4: Xóa hết điểm
 local WPClearBtn = Instance.new("TextButton", WPBar)
 WPClearBtn.Size = UDim2.new(0, 40, 0, 30)
 WPClearBtn.Text = "🗑"
 WPClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 WPClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Nút 5: Cài đặt Waypoint
 local WPSettingsBtn = Instance.new("TextButton", WPBar)
 WPSettingsBtn.Size = UDim2.new(0, 40, 0, 30)
 WPSettingsBtn.Text = "⚙"
@@ -889,7 +872,6 @@ WPSettingsBtn.MouseButton1Click:Connect(function()
     WPSettingsFrame.Visible = not WPSettingsFrame.Visible
 end)
 
--- Tạo cột Cờ Waypoint ảo
 local function createWaypointVisual(cframe, index)
     local pole = Instance.new("Part")
     pole.Name = "WP_" .. tostring(index)
@@ -943,7 +925,6 @@ WPClearBtn.MouseButton1Click:Connect(function()
     WaypointList = {}
 end)
 
--- Chạy/Dừng Waypoint Loop
 WPRunBtn.MouseButton1Click:Connect(function()
     if #WaypointList == 0 then return end
     Settings.WP_Running = not Settings.WP_Running
@@ -1010,7 +991,6 @@ addSimpleToggle(MiscPage, "Bật Thanh Waypoint Nổi", function(state)
         Settings.WP_Running = false
     end
 end)
-
 
 ------------------ LƯU / TẢI BẢN LƯU WAYPOINT MAP ------------------
 local SaveFrame = Instance.new("Frame", MiscPage)
@@ -1097,11 +1077,9 @@ local function renderSaveList()
         loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
         loadBtn.MouseButton1Click:Connect(function()
-            -- Clear hiện tại
             for _, wp in pairs(WaypointList) do if wp.Part then wp.Part:Destroy() end end
             WaypointList = {}
 
-            -- Load dữ liệu
             for i, cfTable in ipairs(cfDataList) do
                 local cf = CFrame.new(unpack(cfTable))
                 local pole = createWaypointVisual(cf, i)
@@ -1142,7 +1120,6 @@ SaveActionBtn.MouseButton1Click:Connect(function()
 end)
 
 renderSaveList()
-
 
 ---------------------------------------------------------
 -- HỆ THỐNG ESP & GAMEPLAY LOOP FIX
@@ -1258,11 +1235,10 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Movement Mechanic & Shift Lock Fix
+    -- Movement Mechanic
     local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         local hum = char:FindFirstChildOfClass("Humanoid")
-        local hrp = char:FindFirstChild("HumanoidRootPart")
 
         if Settings.WalkSpeedActive then hum.WalkSpeed = Settings.WalkSpeedVal end
         if Settings.JumpPowerActive then
@@ -1270,18 +1246,6 @@ RunService.RenderStepped:Connect(function()
             hum.JumpPower = Settings.JumpPowerVal
         end
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
-
-        -- Shift Lock Camera Control chuẩn PC
-        if shiftLockEnabled and hrp then
-            hum.AutoRotate = false
-            local lookPos = Camera.CFrame.LookVector
-            local rootPos = hrp.Position
-            hrp.CFrame = CFrame.new(rootPos, rootPos + Vector3.new(lookPos.X, 0, lookPos.Z))
-            
-            Camera.CFrame = Camera.CFrame * CFrame.new(1.7, 0, 0)
-        else
-            hum.AutoRotate = true
-        end
     end
 
     -- Aimbot Loop

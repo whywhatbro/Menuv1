@@ -1,926 +1,501 @@
--- Roblox Mobile Hub - Ultimate Custom Edition Fixed (UI Load Guaranteed)
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+local camera = workspace.CurrentCamera
 
--- Cấu hình hệ thống
-local Settings = {
-    AimbotMode = "None",
-    FOVRadius = 120,
-    
-    WalkSpeedActive = false,
-    WalkSpeedVal = 16,
-    
-    JumpPowerActive = false,
-    JumpPowerVal = 50,
-    
-    FlyActive = false,
-    
-    InfJumpActive = false,
-    GravityActive = false,
-    GravityVal = 196.2,
-    
-    ShiftLockActive = false,
-    
-    FullBrightActive = false,
-    UnlockCamActive = false,
-    RemoveFogActive = false,
-    
-    ESP_Name = false,
-    ESP_Highlight = false,
-    ESP_Full = false,
-    
-    TargetPlayerName = "",
-    
-    -- Auto Click
-    AC_LoopInfinite = true,
-    AC_LoopCount = 5,
-    AC_CircleSize = 40,
-    AC_Running = false
-}
+-- File lưu Waypoint riêng biệt cho từng Game theo PlaceId
+local FILE_NAME = "Waypoints_Game_" .. tostring(game.PlaceId) .. ".json"
 
-local ServerStartTime = os.time()
+-- ==========================================
+-- 1. FIX SHIFTLOCK SYSTEM
+-- ==========================================
+local shiftLockActive = false
 
--- Anti AFK
-LocalPlayer.Idled:Connect(function()
-    game:GetService("VirtualUser"):CaptureController()
-    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
-end)
-
--- Vòng tròn FOV Aimbot
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.Color = Color3.fromRGB(255, 50, 50)
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-FOVCircle.Visible = false
-
----------------------------------------------------------
--- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH (UI PARENT FIX)
----------------------------------------------------------
-local function GetSafeParent()
-    local success, parent = pcall(function()
-        if gethui then
-            return gethui()
-        elseif game:GetService("CoreGui") then
-            return game:GetService("CoreGui")
-        end
-    end)
-    if success and parent then
-        return parent
-    end
-    return LocalPlayer:WaitForChild("PlayerGui")
+local function toggleShiftLock()
+	shiftLockActive = not shiftLockActive
+	if shiftLockActive then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		camera.CameraType = Enum.CameraType.Custom
+	else
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
 end
 
-local TargetParent = GetSafeParent()
+-- ==========================================
+-- 2. MAIN GUI SETUP
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomUtilityGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Xóa Hub cũ nếu tồn tại
-if TargetParent:FindFirstChild("UltimateMobileHub") then
-    TargetParent.UltimateMobileHub:Destroy()
-end
+-- Menu Chính
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 320, 0, 220)
+mainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UltimateMobileHub"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = TargetParent
+-- Viền Menu to hơn để dễ kéo thả
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Thickness = 6
+uiStroke.Color = Color3.fromRGB(85, 170, 255)
+uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+uiStroke.Parent = mainFrame
 
--- Nút Bật/Tắt Menu Chính
-local ToggleMenuBtn = Instance.new("TextButton", ScreenGui)
-ToggleMenuBtn.Size = UDim2.new(0, 90, 0, 35)
-ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
-ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleMenuBtn.Text = "MENU HUB"
-ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
-ToggleMenuBtn.TextSize = 13
-ToggleMenuBtn.Active = true
-ToggleMenuBtn.Draggable = true
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 500, 0, 250)
-MainFrame.Position = UDim2.new(0.5, -250, 0.4, -125)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Active = true
-MainFrame.Draggable = true
+-- Title Bar
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+titleLabel.Text = "  HỆ THỐNG TỔNG HỢP"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 18
+titleLabel.Parent = mainFrame
 
-ToggleMenuBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = titleLabel
 
--- Header Bar
-local Header = Instance.new("Frame", MainFrame)
-Header.Size = UDim2.new(1, 0, 0, 30)
-Header.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+-- Container Chứa Tab
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(1, -20, 1, -50)
+tabContainer.Position = UDim2.new(0, 10, 0, 45)
+tabContainer.BackgroundTransparency = 1
+tabContainer.Parent = mainFrame
 
-local Title = Instance.new("TextLabel", Header)
-Title.Size = UDim2.new(1, -10, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Text = "MOBILE ADVANCED HUB"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextXAlignment = Enum.TextXAlignment.Left
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 8)
+listLayout.Parent = tabContainer
 
--- Navigation Bar (7 Tabs)
-local TabBar = Instance.new("Frame", MainFrame)
-TabBar.Position = UDim2.new(0, 0, 0, 30)
-TabBar.Size = UDim2.new(1, 0, 0, 30)
-TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+-- ==========================================
+-- 3. AUTO CLICK SYSTEM & FLOATING PANEL
+-- ==========================================
+local autoClicking = false
+local clickDelay = 0.1
+local clickCircles = {} -- Danh sách các điểm vòng tròn click màn hình
 
-local TabLayout = Instance.new("UIListLayout", TabBar)
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
+local autoClickBtn = Instance.new("TextButton")
+autoClickBtn.Size = UDim2.new(1, 0, 0, 35)
+autoClickBtn.BackgroundColor3 = Color3.fromRGB(60, 170, 90)
+autoClickBtn.Text = "Bật Auto Click: OFF"
+autoClickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoClickBtn.Font = Enum.Font.SourceSansBold
+autoClickBtn.TextSize = 16
+autoClickBtn.Parent = tabContainer
 
-local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Position = UDim2.new(0, 0, 0, 60)
-ContentFrame.Size = UDim2.new(1, 0, 1, -60)
-ContentFrame.BackgroundTransparency = 1
-
-local Pages = {}
-
-local function createTab(name, order)
-    local btn = Instance.new("TextButton", TabBar)
-    btn.Size = UDim2.new(1/7, 0, 1, 0)
-    btn.Text = name
-    btn.TextColor3 = Color3.fromRGB(180, 180, 180)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.TextSize = 10
-
-    local page = Instance.new("ScrollingFrame", ContentFrame)
-    page.Size = UDim2.new(1, -10, 1, -10)
-    page.Position = UDim2.new(0, 5, 0, 5)
-    page.BackgroundTransparency = 1
-    page.Visible = (order == 1)
-    page.CanvasSize = UDim2.new(0, 0, 3, 0)
-    page.ScrollBarThickness = 4
-
-    local layout = Instance.new("UIListLayout", page)
-    layout.Padding = UDim.new(0, 5)
-
-    Pages[name] = page
-
-    btn.MouseButton1Click:Connect(function()
-        for _, p in pairs(ContentFrame:GetChildren()) do p.Visible = false end
-        for _, b in pairs(TabBar:GetChildren()) do
-            if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(180, 180, 180) end
-        end
-        page.Visible = true
-        btn.TextColor3 = Color3.fromRGB(255, 255, 0)
-    end)
-    return page
-end
-
-local ServerPage   = createTab("SERVER", 1)
-local CombatPage   = createTab("COMBAT", 2)
-local MovePage     = createTab("MOVE", 3)
-local VisualPage   = createTab("ESP", 4)
-local WorldPage    = createTab("WORLD", 5)
-local PlayerPage   = createTab("PLAYER", 6)
-local AutoClickPage= createTab("CLICK", 7)
-
----------------------------------------------------------
--- UI HELPER FUNCTIONS
----------------------------------------------------------
-local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
-    local frame = Instance.new("Frame", page)
-    frame.Size = UDim2.new(0.98, 0, 0, 35)
-    frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0.5, 0, 1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    btn.Text = name .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    local txt = Instance.new("TextBox", frame)
-    txt.Position = UDim2.new(0.52, 0, 0, 0)
-    txt.Size = UDim2.new(0.46, 0, 1, 0)
-    txt.Text = tostring(defaultVal)
-    txt.PlaceholderText = "Nhập giá trị"
-    txt.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    txt.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-    local active = false
-    btn.MouseButton1Click:Connect(function()
-        active = not active
-        btn.BackgroundColor3 = active and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-        btn.Text = name .. (active and ": ON" or ": OFF")
-        onToggle(active)
-    end)
-
-    txt.FocusLost:Connect(function()
-        local val = tonumber(txt.Text)
-        if val then onValChange(val) end
-    end)
-end
-
-local function addSimpleToggle(page, name, onToggle)
-    local btn = Instance.new("TextButton", page)
-    btn.Size = UDim2.new(0.98, 0, 0, 30)
-    btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    btn.Text = name .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    local active = false
-    btn.MouseButton1Click:Connect(function()
-        active = not active
-        btn.BackgroundColor3 = active and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-        btn.Text = name .. (active and ": ON" or ": OFF")
-        onToggle(active)
-    end)
-    return btn
-end
-
----------------------------------------------------------
--- 1. TAB SERVER
----------------------------------------------------------
-local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
-ServerAgeLabel.Size = UDim2.new(0.98, 0, 0, 25)
-ServerAgeLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-ServerAgeLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-
+-- Luồng thực thi Auto Click
 task.spawn(function()
-    while task.wait(1) do
-        local diff = os.time() - ServerStartTime
-        local d = math.floor(diff / 86400)
-        local h = math.floor((diff % 86400) / 3600)
-        local m = math.floor((diff % 3600) / 60)
-        local s = diff % 60
-        ServerAgeLabel.Text = string.format("Tuổi Server: %d ngày, %d giờ, %d phút, %d giây", d, h, m, s)
-    end
+	while true do
+		if autoClicking then
+			if #clickCircles > 0 then
+				-- Click lần lượt vào các điểm vòng tròn đã tạo
+				for _, circle in ipairs(clickCircles) do
+					if not autoClicking then break end
+					local pos = circle.AbsolutePosition + (circle.AbsoluteSize / 2)
+					VirtualInputManager = VirtualInputManager or game:GetService("VirtualInputManager")
+					VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+					VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+					task.wait(clickDelay)
+				end
+			else
+				-- Nếu không có vòng tròn, click tại vị trí chuột hiện tại
+				mouse1click()
+				task.wait(clickDelay)
+			end
+		else
+			task.wait(0.1)
+		end
+	end
 end)
 
-local PlayerListFrame = Instance.new("Frame", ServerPage)
-PlayerListFrame.Size = UDim2.new(0.98, 0, 0, 120)
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
-local PlayerScroll = Instance.new("ScrollingFrame", PlayerListFrame)
-PlayerScroll.Size = UDim2.new(1, 0, 1, 0)
-PlayerScroll.CanvasSize = UDim2.new(0, 0, 5, 0)
-local PLayout = Instance.new("UIListLayout", PlayerScroll)
-
-local function loadServerPlayers()
-    for _, item in pairs(PlayerScroll:GetChildren()) do
-        if not item:IsA("UIListLayout") then item:Destroy() end
-    end
-    for _, p in pairs(Players:GetPlayers()) do
-        local item = Instance.new("Frame", PlayerScroll)
-        item.Size = UDim2.new(1, 0, 0, 30)
-        item.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-        local img = Instance.new("ImageLabel", item)
-        img.Size = UDim2.new(0, 30, 0, 30)
-        pcall(function()
-            img.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-
-        local nameLbl = Instance.new("TextLabel", item)
-        nameLbl.Position = UDim2.new(0, 35, 0, 0)
-        nameLbl.Size = UDim2.new(0.4, 0, 1, 0)
-        nameLbl.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-        nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLbl.TextScaled = true
-
-        local cReal = Instance.new("TextButton", item)
-        cReal.Position = UDim2.new(0.72, 0, 0.1, 0)
-        cReal.Size = UDim2.new(0.13, 0, 0.8, 0)
-        cReal.Text = "Copy User"
-        cReal.MouseButton1Click:Connect(function() setclipboard(p.Name) end)
-
-        local cDisplay = Instance.new("TextButton", item)
-        cDisplay.Position = UDim2.new(0.86, 0, 0.1, 0)
-        cDisplay.Size = UDim2.new(0.13, 0, 0.8, 0)
-        cDisplay.Text = "Copy Display"
-        cDisplay.MouseButton1Click:Connect(function() setclipboard(p.DisplayName) end)
-    end
-end
-loadServerPlayers()
-
-local ResetBtn = Instance.new("TextButton", ServerPage)
-ResetBtn.Size = UDim2.new(0.98, 0, 0, 30)
-ResetBtn.Text = "Reset Player List"
-ResetBtn.MouseButton1Click:Connect(loadServerPlayers)
-
-local RejoinBtn = Instance.new("TextButton", ServerPage)
-RejoinBtn.Size = UDim2.new(0.98, 0, 0, 30)
-RejoinBtn.Text = "Rejoin Server"
-RejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+autoClickBtn.MouseButton1Click:Connect(function()
+	autoClicking = not autoClicking
+	autoClickBtn.Text = "Bật Auto Click: " .. (autoClicking and "ON" or "OFF")
+	autoClickBtn.BackgroundColor3 = autoClicking and Color3.fromRGB(220, 60, 60) or Color3.fromRGB(60, 170, 90)
 end)
 
-local HopBtn = Instance.new("TextButton", ServerPage)
-HopBtn.Size = UDim2.new(0.98, 0, 0, 30)
-HopBtn.Text = "Hop Server (Ngẫu nhiên)"
-HopBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local list = HttpService:JSONDecode(game:HttpGet(api)).data
-        if list and #list > 0 then
-            local s = list[math.random(1, #list)]
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-        end
-    end)
+-- Nút ShiftLock trên Menu
+local shiftLockBtn = Instance.new("TextButton")
+shiftLockBtn.Size = UDim2.new(1, 0, 0, 35)
+shiftLockBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+shiftLockBtn.Text = "Bật / Tắt ShiftLock"
+shiftLockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+shiftLockBtn.Font = Enum.Font.SourceSansBold
+shiftLockBtn.TextSize = 16
+shiftLockBtn.Parent = tabContainer
+
+shiftLockBtn.MouseButton1Click:Connect(toggleShiftLock)
+
+-- Cấu hình Tốc độ Click
+local speedFrame = Instance.new("Frame")
+speedFrame.Size = UDim2.new(1, 0, 0, 35)
+speedFrame.BackgroundTransparency = 1
+speedFrame.Parent = tabContainer
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0, 160, 1, 0)
+speedLabel.Text = "Tốc độ Click (giây):"
+speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+speedLabel.Font = Enum.Font.SourceSans
+speedLabel.TextSize = 14
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = speedFrame
+
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(1, -165, 1, 0)
+speedInput.Position = UDim2.new(0, 165, 0, 0)
+speedInput.Text = tostring(clickDelay)
+speedInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedInput.Font = Enum.Font.SourceSans
+speedInput.TextSize = 14
+speedInput.Parent = speedFrame
+
+speedInput.FocusLost:Connect(function()
+	local val = tonumber(speedInput.Text)
+	if val and val > 0 then
+		clickDelay = val
+	else
+		speedInput.Text = tostring(clickDelay)
+	end
 end)
 
-local LowHopBtn = Instance.new("TextButton", ServerPage)
-LowHopBtn.Size = UDim2.new(0.98, 0, 0, 30)
-LowHopBtn.Text = "Join Low Server (1-5 Người)"
-LowHopBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local list = HttpService:JSONDecode(game:HttpGet(api)).data
-        for _, s in pairs(list) do
-            if s.playing >= 1 and s.playing <= 5 and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                break
-            end
-        end
-    end)
+-- Bảng Nổi Auto Click (Floating Click Panel)
+local floatClickFrame = Instance.new("Frame")
+floatClickFrame.Size = UDim2.new(0, 130, 0, 105)
+floatClickFrame.Position = UDim2.new(0.02, 0, 0.4, 0)
+floatClickFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+floatClickFrame.Active = true
+floatClickFrame.Draggable = true
+floatClickFrame.Parent = screenGui
+
+local floatLayout = Instance.new("UIListLayout")
+floatLayout.Padding = UDim.new(0, 5)
+floatLayout.Parent = floatClickFrame
+
+local btnAddClick = Instance.new("TextButton")
+btnAddClick.Size = UDim2.new(1, 0, 0, 30)
+btnAddClick.Text = "+ Thêm Vòng Tròn"
+btnAddClick.Parent = floatClickFrame
+
+local btnDelClick = Instance.new("TextButton")
+btnDelClick.Size = UDim2.new(1, 0, 0, 30)
+btnDelClick.Text = "- Xoá Điểm"
+btnDelClick.Parent = floatClickFrame
+
+local btnClearAllClick = Instance.new("TextButton")
+btnClearAllClick.Size = UDim2.new(1, 0, 0, 30)
+btnClearAllClick.Text = "Xoá Tất Cả Điểm"
+btnClearAllClick.Parent = floatClickFrame
+
+-- Tạo vòng tròn điểm click trên màn hình
+btnAddClick.MouseButton1Click:Connect(function()
+	local index = #clickCircles + 1
+	local circle = Instance.new("Frame")
+	circle.Name = "ClickCircle_" .. index
+	circle.Size = UDim2.new(0, 35, 0, 35)
+	circle.Position = UDim2.new(0.5, -17, 0.5, -17)
+	circle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+	circle.BackgroundTransparency = 0.3
+	circle.Active = true
+	circle.Draggable = true
+	circle.Parent = screenGui
+
+	local cCorner = Instance.new("UICorner")
+	cCorner.CornerRadius = UDim.new(1, 0)
+	cCorner.Parent = circle
+
+	local cLabel = Instance.new("TextLabel")
+	cLabel.Size = UDim2.new(1, 0, 1, 0)
+	cLabel.BackgroundTransparency = 1
+	cLabel.Text = tostring(index)
+	cLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	cLabel.Font = Enum.Font.SourceSansBold
+	cLabel.TextSize = 16
+	cLabel.Parent = circle
+
+	table.insert(clickCircles, circle)
 end)
 
----------------------------------------------------------
--- 2. TAB COMBAT
----------------------------------------------------------
-addSimpleToggle(CombatPage, "Aim Người Gần Nhất", function(val) Settings.AimbotMode = val and "Closest" or "None" end)
-addSimpleToggle(CombatPage, "Aim Ít Máu Nhất", function(val) Settings.AimbotMode = val and "LowestHealth" or "None" end)
-
-local AimFOVToggle = Instance.new("TextButton", CombatPage)
-AimFOVToggle.Size = UDim2.new(0.98, 0, 0, 30)
-AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): OFF"
-AimFOVToggle.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-AimFOVToggle.MouseButton1Click:Connect(function()
-    if Settings.AimbotMode == "FOV" then
-        Settings.AimbotMode = "None"
-        FOVCircle.Visible = false
-        AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): OFF"
-        AimFOVToggle.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    else
-        Settings.AimbotMode = "FOV"
-        FOVCircle.Visible = true
-        AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): ON"
-        AimFOVToggle.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    end
+-- Xóa 1 điểm vòng tròn cuối
+btnDelClick.MouseButton1Click:Connect(function()
+	if #clickCircles > 0 then
+		local lastCircle = clickCircles[#clickCircles]
+		lastCircle:Destroy()
+		table.remove(clickCircles, #clickCircles)
+	end
 end)
 
-local FOVInput = Instance.new("TextBox", CombatPage)
-FOVInput.Size = UDim2.new(0.98, 0, 0, 30)
-FOVInput.Text = tostring(Settings.FOVRadius)
-FOVInput.PlaceholderText = "Nhập bán kính FOV"
-FOVInput.FocusLost:Connect(function()
-    local val = tonumber(FOVInput.Text)
-    if val then
-        Settings.FOVRadius = val
-        FOVCircle.Radius = val
-    end
+-- Xóa tất cả các điểm vòng tròn
+btnClearAllClick.MouseButton1Click:Connect(function()
+	for _, circle in ipairs(clickCircles) do
+		circle:Destroy()
+	end
+	clickCircles = {}
 end)
 
----------------------------------------------------------
--- 3. TAB MOVEMENT (FLY V3 & SHIFTLOCK ROBLOX PC)
----------------------------------------------------------
-addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
-addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
-addToggleWithInput(MovePage, "Trọng Lực (Gravity)", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
-addSimpleToggle(MovePage, "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
+-- ==========================================
+-- 4. WAYPOINT SYSTEM (Bay / Dịch chuyển / Save / Load)
+-- ==========================================
+local waypoints = {}
+local isRunningWP = false
+local isTweenMode = true
+local flySpeed = 50
 
--- Tải Script FlyGuiV3 An Toàn
-addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
-        end)
-    end
-end)
+-- Mở rộng bảng điều khiển Waypoint lên height 280px
+local wpPanel = Instance.new("Frame")
+wpPanel.Size = UDim2.new(0, 160, 0, 280)
+wpPanel.Position = UDim2.new(0.85, 0, 0.25, 0)
+wpPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+wpPanel.Active = true
+wpPanel.Draggable = true
+wpPanel.Parent = screenGui
 
--- Nút Shift Lock Nổi Chuẩn Texture Roblox PC
-local ShiftLockFloatBtn = Instance.new("ImageButton", ScreenGui)
-ShiftLockFloatBtn.Size = UDim2.new(0, 50, 0, 50)
-ShiftLockFloatBtn.Position = UDim2.new(0.85, 0, 0.5, 0)
-ShiftLockFloatBtn.BackgroundTransparency = 1
-ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off)
-ShiftLockFloatBtn.Visible = false
-ShiftLockFloatBtn.Active = true
-ShiftLockFloatBtn.Draggable = true
+local wpLayout = Instance.new("UIListLayout")
+wpLayout.Padding = UDim.new(0, 4)
+wpLayout.Parent = wpPanel
 
--- Crosshair Tâm Ngắm Chuẩn Roblox PC
-local ShiftLockCrosshair = Instance.new("ImageLabel", ScreenGui)
-ShiftLockCrosshair.Size = UDim2.new(0, 32, 0, 32)
-ShiftLockCrosshair.Position = UDim2.new(0.5, -16, 0.5, -16)
-ShiftLockCrosshair.BackgroundTransparency = 1
-ShiftLockCrosshair.Image = "rbxassetid://11822818625" -- Crosshair Chuẩn Roblox PC
-ShiftLockCrosshair.Visible = false
+local btnAddWP = Instance.new("TextButton")
+btnAddWP.Size = UDim2.new(1, 0, 0, 30)
+btnAddWP.Text = "1. Đặt Điểm WP"
+btnAddWP.Parent = wpPanel
 
-local shiftLockEnabled = false
+local btnRunWP = Instance.new("TextButton")
+btnRunWP.Size = UDim2.new(1, 0, 0, 30)
+btnRunWP.Text = "2. Bật Chạy WP"
+btnRunWP.BackgroundColor3 = Color3.fromRGB(60, 150, 60)
+btnRunWP.Parent = wpPanel
 
-ShiftLockFloatBtn.MouseButton1Click:Connect(function()
-    shiftLockEnabled = not shiftLockEnabled
-    
-    if shiftLockEnabled then
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923868" -- Texture ShiftLock Bật (On)
-        ShiftLockCrosshair.Visible = true
-    else
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
-        ShiftLockCrosshair.Visible = false
-    end
-end)
+local btnDelWP = Instance.new("TextButton")
+btnDelWP.Size = UDim2.new(1, 0, 0, 30)
+btnDelWP.Text = "3. Xoá 1 Điểm Cuối"
+btnDelWP.Parent = wpPanel
 
-addSimpleToggle(MovePage, "Bật Nút Shift Lock Nổi Chuẩn PC", function(state)
-    Settings.ShiftLockActive = state
-    ShiftLockFloatBtn.Visible = state
-    if not state then
-        shiftLockEnabled = false
-        ShiftLockCrosshair.Visible = false
-        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
-    end
-end)
+local btnClearWP = Instance.new("TextButton")
+btnClearWP.Size = UDim2.new(1, 0, 0, 30)
+btnClearWP.Text = "4. Xoá Hết Điểm"
+btnClearWP.Parent = wpPanel
 
----------------------------------------------------------
--- 4. TAB VISUAL (ESP & LIGHTING)
----------------------------------------------------------
-addSimpleToggle(VisualPage, "ESP Tên", function(val) Settings.ESP_Name = val end)
-addSimpleToggle(VisualPage, "ESP Viền Sáng", function(val) Settings.ESP_Highlight = val end)
-addSimpleToggle(VisualPage, "Full ESP (Hiển thị Máu + Tên)", function(val) Settings.ESP_Full = val end)
-addSimpleToggle(VisualPage, "Full Bright (Màn Hình Sáng)", function(val)
-    Settings.FullBrightActive = val
-    Lighting.Ambient = val and Color3.new(1,1,1) or Color3.fromRGB(127,127,127)
-    Lighting.GlobalShadows = not val
-end)
-addSimpleToggle(VisualPage, "Mở Khoá Góc Nhìn Camera", function(val)
-    LocalPlayer.CameraMaxZoomDistance = val and 99999 or 128
-end)
+local btnModeWP = Instance.new("TextButton")
+btnModeWP.Size = UDim2.new(1, 0, 0, 30)
+btnModeWP.Text = "Chế độ: Bay Waypoint"
+btnModeWP.BackgroundColor3 = Color3.fromRGB(100, 80, 180)
+btnModeWP.Parent = wpPanel
 
----------------------------------------------------------
--- 5. TAB WORLD
----------------------------------------------------------
-addSimpleToggle(WorldPage, "Xóa Sương Mù (Remove Fog)", function(val)
-    Settings.RemoveFogActive = val
-    if val then
-        Lighting.FogEnd = 9e9
-        for _, v in pairs(Lighting:GetChildren()) do
-            if v:IsA("Atmosphere") then v:Destroy() end
-        end
-    else
-        Lighting.FogEnd = 1000
-    end
-end)
+local speedBoxWP = Instance.new("TextBox")
+speedBoxWP.Size = UDim2.new(1, 0, 0, 30)
+speedBoxWP.PlaceholderText = "Nhập tốc độ bay..."
+speedBoxWP.Text = "Tốc độ: " .. flySpeed
+speedBoxWP.Parent = wpPanel
 
-local function optimizeGame()
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-            v.Reflectance = 0
-        elseif v:IsA("Decal") or v:IsA("Texture") then
-            v:Destroy()
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-            v.Enabled = false
-        end
-    end
-end
+-- Nút Lưu & Tải File
+local btnSaveWP = Instance.new("TextButton")
+btnSaveWP.Size = UDim2.new(1, 0, 0, 25)
+btnSaveWP.Text = "💾 Lưu Danh Sách WP"
+btnSaveWP.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+btnSaveWP.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnSaveWP.Parent = wpPanel
 
-local AntiLagBtn = Instance.new("TextButton", WorldPage)
-AntiLagBtn.Size = UDim2.new(0.98, 0, 0, 30)
-AntiLagBtn.Text = "Giảm Lag (FPS Boost - Smooth Textures)"
-AntiLagBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-AntiLagBtn.MouseButton1Click:Connect(function()
-    optimizeGame()
-    AntiLagBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    AntiLagBtn.Text = "Đã Bật Giảm Lag!"
-end)
+local btnLoadWP = Instance.new("TextButton")
+btnLoadWP.Size = UDim2.new(1, 0, 0, 25)
+btnLoadWP.Text = "📂 Tải Danh Sách WP"
+btnLoadWP.BackgroundColor3 = Color3.fromRGB(215, 120, 0)
+btnLoadWP.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnLoadWP.Parent = wpPanel
 
----------------------------------------------------------
--- 6. TAB PLAYER
----------------------------------------------------------
-local TargetProfileFrame = Instance.new("Frame", PlayerPage)
-TargetProfileFrame.Size = UDim2.new(0.98, 0, 0, 80)
-TargetProfileFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+-- Hàm khởi tạo hiển thị Cột Trắng Visual
+local function createWaypointVisual(pos, index)
+	local part = Instance.new("Part")
+	part.Name = "Waypoint_" .. index
+	part.Size = Vector3.new(0.6, 6, 0.6)
+	part.Position = pos
+	part.Anchored = true
+	part.CanCollide = false
+	part.Material = Enum.Material.SmoothPlastic
+	part.Color = Color3.fromRGB(255, 255, 255)
+	part.Parent = workspace
+	
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(0, 50, 0, 50)
+	bb.Adornee = part
+	bb.AlwaysOnTop = true
+	bb.StudsOffset = Vector3.new(0, 4, 0)
+	bb.Parent = part
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, 0, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = tostring(index)
+	lbl.TextColor3 = Color3.fromRGB(255, 255, 0)
+	lbl.TextScaled = true
+	lbl.Font = Enum.Font.SourceSansBold
+	lbl.Parent = bb
 
-local AvatarImg = Instance.new("ImageLabel", TargetProfileFrame)
-AvatarImg.Size = UDim2.new(0, 75, 0, 75)
-AvatarImg.Position = UDim2.new(0, 2, 0, 2)
-
-local InfoLabel = Instance.new("TextLabel", TargetProfileFrame)
-InfoLabel.Position = UDim2.new(0, 85, 0, 5)
-InfoLabel.Size = UDim2.new(0.7, 0, 0.9, 0)
-InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
-InfoLabel.Text = "Nhập tên người chơi bên dưới..."
-
-local SearchBox = Instance.new("TextBox", PlayerPage)
-SearchBox.Size = UDim2.new(0.98, 0, 0, 30)
-SearchBox.PlaceholderText = "Nhập tên người chơi..."
-SearchBox.TextColor3 = Color3.fromRGB(255, 255, 0)
-
-local targetSelectedPlayer = nil
-
-SearchBox.FocusLost:Connect(function()
-    local text = SearchBox.Text:lower()
-    targetSelectedPlayer = nil
-    for _, p in pairs(Players:GetPlayers()) do
-        if p.Name:lower():sub(1, #text) == text or p.DisplayName:lower():sub(1, #text) == text then
-            targetSelectedPlayer = p
-            break
-        end
-    end
-    
-    if targetSelectedPlayer then
-        pcall(function()
-            AvatarImg.Image = Players:GetUserThumbnailAsync(targetSelectedPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-        InfoLabel.Text = string.format("Tên: %s\n@User: %s\nTuổi Acc: %d ngày", targetSelectedPlayer.DisplayName, targetSelectedPlayer.Name, targetSelectedPlayer.AccountAge)
-        Settings.TargetPlayerName = targetSelectedPlayer.Name
-    else
-        InfoLabel.Text = "Không tìm thấy người chơi!"
-    end
-end)
-
-local TeleBtn = Instance.new("TextButton", PlayerPage)
-TeleBtn.Size = UDim2.new(0.98, 0, 0, 30)
-TeleBtn.Text = "Teleport Đến Người Chơi"
-TeleBtn.MouseButton1Click:Connect(function()
-    if targetSelectedPlayer and targetSelectedPlayer.Character and targetSelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = targetSelectedPlayer.Character.HumanoidRootPart.CFrame
-    end
-end)
-
-local ViewPlayerBtn = Instance.new("TextButton", PlayerPage)
-ViewPlayerBtn.Size = UDim2.new(0.98, 0, 0, 30)
-ViewPlayerBtn.Text = "Xem Góc Nhìn (Toggle)"
-local viewingTarget = false
-ViewPlayerBtn.MouseButton1Click:Connect(function()
-    viewingTarget = not viewingTarget
-    if viewingTarget and targetSelectedPlayer and targetSelectedPlayer.Character then
-        Camera.CameraSubject = targetSelectedPlayer.Character:FindFirstChildOfClass("Humanoid")
-    else
-        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    end
-end)
-
-local TargetESPBtn = Instance.new("TextButton", PlayerPage)
-TargetESPBtn.Size = UDim2.new(0.98, 0, 0, 30)
-TargetESPBtn.Text = "Full ESP Người Chơi Này"
-local targetESPActive = false
-TargetESPBtn.MouseButton1Click:Connect(function()
-    targetESPActive = not targetESPActive
-    TargetESPBtn.BackgroundColor3 = targetESPActive and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-end)
-
----------------------------------------------------------
--- 7. TAB AUTO CLICK
----------------------------------------------------------
-local AutoClickPoints = {}
-
-local ACBar = Instance.new("Frame", ScreenGui)
-ACBar.Size = UDim2.new(0, 160, 0, 40)
-ACBar.Position = UDim2.new(0.02, 0, 0.35, 0)
-ACBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ACBar.Active = true
-ACBar.Draggable = true
-ACBar.Visible = false
-
-local ACAddBtn = Instance.new("TextButton", ACBar)
-ACAddBtn.Size = UDim2.new(0.3, -2, 0.8, 0)
-ACAddBtn.Position = UDim2.new(0.03, 0, 0.1, 0)
-ACAddBtn.Text = "+"
-ACAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ACAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ACAddBtn.TextSize = 18
-
-local ACRunBtn = Instance.new("TextButton", ACBar)
-ACRunBtn.Size = UDim2.new(0.3, -2, 0.8, 0)
-ACRunBtn.Position = UDim2.new(0.35, 0, 0.1, 0)
-ACRunBtn.Text = "▶"
-ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-ACRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ACRunBtn.TextSize = 14
-
-local ACSettingsBtn = Instance.new("TextButton", ACBar)
-ACSettingsBtn.Size = UDim2.new(0.3, -2, 0.8, 0)
-ACSettingsBtn.Position = UDim2.new(0.67, 0, 0.1, 0)
-ACSettingsBtn.Text = "⚙"
-ACSettingsBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
-ACSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ACSettingsBtn.TextSize = 14
-
-local ACSettingsFrame = Instance.new("Frame", ScreenGui)
-ACSettingsFrame.Size = UDim2.new(0, 200, 0, 140)
-ACSettingsFrame.Position = UDim2.new(0.02, 0, 0.43, 0)
-ACSettingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ACSettingsFrame.Visible = false
-ACSettingsFrame.Active = true
-ACSettingsFrame.Draggable = true
-
-local ACLoopInfBtn = Instance.new("TextButton", ACSettingsFrame)
-ACLoopInfBtn.Size = UDim2.new(0.9, 0, 0, 30)
-ACLoopInfBtn.Position = UDim2.new(0.05, 0, 0.08, 0)
-ACLoopInfBtn.Text = "Lặp Vô Hạn: ON"
-ACLoopInfBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-ACLoopInfBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-ACLoopInfBtn.MouseButton1Click:Connect(function()
-    Settings.AC_LoopInfinite = not Settings.AC_LoopInfinite
-    ACLoopInfBtn.BackgroundColor3 = Settings.AC_LoopInfinite and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-    ACLoopInfBtn.Text = "Lặp Vô Hạn: " .. (Settings.AC_LoopInfinite and "ON" or "OFF")
-end)
-
-local ACLoopCountBox = Instance.new("TextBox", ACSettingsFrame)
-ACLoopCountBox.Size = UDim2.new(0.9, 0, 0, 30)
-ACLoopCountBox.Position = UDim2.new(0.05, 0, 0.35, 0)
-ACLoopCountBox.Text = tostring(Settings.AC_LoopCount)
-ACLoopCountBox.PlaceholderText = "Số vòng lặp"
-ACLoopCountBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ACLoopCountBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-ACLoopCountBox.FocusLost:Connect(function()
-    local val = tonumber(ACLoopCountBox.Text)
-    if val then Settings.AC_LoopCount = val end
-end)
-
-local ACSizeBox = Instance.new("TextBox", ACSettingsFrame)
-ACSizeBox.Size = UDim2.new(0.9, 0, 0, 30)
-ACSizeBox.Position = UDim2.new(0.05, 0, 0.62, 0)
-ACSizeBox.Text = tostring(Settings.AC_CircleSize)
-ACSizeBox.PlaceholderText = "Kích thước vòng"
-ACSizeBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ACSizeBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-ACSizeBox.FocusLost:Connect(function()
-    local val = tonumber(ACSizeBox.Text)
-    if val then
-        Settings.AC_CircleSize = val
-        for _, p in pairs(AutoClickPoints) do
-            p.Frame.Size = UDim2.new(0, val, 0, val)
-        end
-    end
-end)
-
-ACSettingsBtn.MouseButton1Click:Connect(function()
-    ACSettingsFrame.Visible = not ACSettingsFrame.Visible
-end)
-
-local function createAutoClickPoint()
-    local id = #AutoClickPoints + 1
-    local pFrame = Instance.new("Frame", ScreenGui)
-    pFrame.Size = UDim2.new(0, Settings.AC_CircleSize, 0, Settings.AC_CircleSize)
-    pFrame.Position = UDim2.new(0.5, -20 + (id * 10), 0.5, -20)
-    pFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    pFrame.BackgroundTransparency = 0.7
-    pFrame.Active = true
-    pFrame.Draggable = true
-
-    local stroke = Instance.new("UIStroke", pFrame)
-    stroke.Color = Color3.fromRGB(255, 0, 0)
-    stroke.Thickness = 3
-
-    local corner = Instance.new("UICorner", pFrame)
-    corner.CornerRadius = UDim.new(1, 0)
-
-    local lbl = Instance.new("TextLabel", pFrame)
-    lbl.Size = UDim2.new(1, 0, 1, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = tostring(id)
-    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.TextSize = 14
-    lbl.Font = Enum.Font.SourceSansBold
-
-    table.insert(AutoClickPoints, {Frame = pFrame})
+	return part
 end
 
-ACAddBtn.MouseButton1Click:Connect(createAutoClickPoint)
-
-ACRunBtn.MouseButton1Click:Connect(function()
-    Settings.AC_Running = not Settings.AC_Running
-    if Settings.AC_Running then
-        ACRunBtn.Text = "⏹"
-        ACRunBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        
-        task.spawn(function()
-            local loops = 0
-            while Settings.AC_Running do
-                if not Settings.AC_LoopInfinite and loops >= Settings.AC_LoopCount then
-                    Settings.AC_Running = false
-                    break
-                end
-
-                for i, p in ipairs(AutoClickPoints) do
-                    if not Settings.AC_Running then break end
-                    local pos = p.Frame.AbsolutePosition + (p.Frame.AbsoluteSize / 2)
-                    VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, true, game, 0)
-                    task.wait(0.05)
-                    VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, false, game, 0)
-                    task.wait(0.1)
-                end
-
-                loops = loops + 1
-                task.wait(0.1)
-            end
-            
-            Settings.AC_Running = false
-            ACRunBtn.Text = "▶"
-            ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-        end)
-    else
-        ACRunBtn.Text = "▶"
-        ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-    end
+-- Chuyển đổi giữa chế độ Bay (Tween) & Dịch chuyển (Teleport)
+btnModeWP.MouseButton1Click:Connect(function()
+	isTweenMode = not isTweenMode
+	if isTweenMode then
+		btnModeWP.Text = "Chế độ: Bay Waypoint"
+		speedBoxWP.Visible = true
+	else
+		btnModeWP.Text = "Chế độ: Dịch Chuyển"
+		speedBoxWP.Visible = false
+	end
 end)
 
-addSimpleToggle(AutoClickPage, "Bật Thanh Auto Click", function(state)
-    ACBar.Visible = state
-    if not state then
-        ACSettingsFrame.Visible = false
-        Settings.AC_Running = false
-    end
+speedBoxWP.FocusLost:Connect(function()
+	local val = tonumber(speedBoxWP.Text:match("%d+"))
+	if val then
+		flySpeed = val
+		speedBoxWP.Text = "Tốc độ: " .. flySpeed
+	end
 end)
 
-local ClearACBtn = Instance.new("TextButton", AutoClickPage)
-ClearACBtn.Size = UDim2.new(0.98, 0, 0, 30)
-ClearACBtn.Text = "Xóa Tất Cả Điểm Auto Click"
-ClearACBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(AutoClickPoints) do
-        p.Frame:Destroy()
-    end
-    AutoClickPoints = {}
+-- 1. Đặt Điểm Waypoint
+btnAddWP.MouseButton1Click:Connect(function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local pos = char.HumanoidRootPart.Position
+		local index = #waypoints + 1
+		local part = createWaypointVisual(pos, index)
+		table.insert(waypoints, {Part = part, Position = pos})
+	end
 end)
 
----------------------------------------------------------
--- HỆ THỐNG ESP & GAMEPLAY LOOP
----------------------------------------------------------
-UserInputService.JumpRequest:Connect(function()
-    if Settings.InfJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
+-- 2. Chạy Waypoint
+btnRunWP.MouseButton1Click:Connect(function()
+	isRunningWP = not isRunningWP
+	btnRunWP.Text = isRunningWP and "Đang Chạy..." or "2. Bật Chạy WP"
+	btnRunWP.BackgroundColor3 = isRunningWP and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 150, 60)
+	
+	if isRunningWP then
+		task.spawn(function()
+			local char = player.Character
+			if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+			local hrp = char.HumanoidRootPart
+			
+			for i, wp in ipairs(waypoints) do
+				if not isRunningWP then break end
+				
+				if isTweenMode then
+					local dist = (hrp.Position - wp.Position).Magnitude
+					local time = dist / flySpeed
+					local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear)
+					local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(wp.Position)})
+					tween:Play()
+					tween.Completed:Wait()
+				else
+					hrp.CFrame = CFrame.new(wp.Position)
+					task.wait(0.2)
+				end
+			end
+			isRunningWP = false
+			btnRunWP.Text = "2. Bật Chạy WP"
+			btnRunWP.BackgroundColor3 = Color3.fromRGB(60, 150, 60)
+		end)
+	end
 end)
 
-local function getHealthColor(percent)
-    if percent >= 0.99 then
-        return Color3.fromRGB(0, 255, 0)
-    elseif percent >= 0.75 then
-        return Color3.fromRGB(153, 255, 0)
-    elseif percent >= 0.50 then
-        return Color3.fromRGB(255, 255, 0)
-    elseif percent >= 0.35 then
-        return Color3.fromRGB(255, 128, 0)
-    else
-        return Color3.fromRGB(255, 0, 0)
-    end
+-- 3. Xoá 1 điểm cuối
+btnDelWP.MouseButton1Click:Connect(function()
+	if #waypoints > 0 then
+		local lastWP = waypoints[#waypoints]
+		if lastWP.Part then lastWP.Part:Destroy() end
+		table.remove(waypoints, #waypoints)
+	end
+end)
+
+-- 4. Xoá tất cả điểm
+btnClearWP.MouseButton1Click:Connect(function()
+	for _, wp in ipairs(waypoints) do
+		if wp.Part then wp.Part:Destroy() end
+	end
+	waypoints = {}
+end)
+
+-- Quản lý Save/Load Waypoint bằng JSON
+local function loadWaypointsForCurrentGame()
+	if not readfile or not isfile or not isfile(FILE_NAME) then return false end
+
+	for _, wp in ipairs(waypoints) do
+		if wp.Part then wp.Part:Destroy() end
+	end
+	waypoints = {}
+
+	local success, result = pcall(function()
+		return HttpService:JSONDecode(readfile(FILE_NAME))
+	end)
+
+	if success and result then
+		for index, posData in ipairs(result) do
+			local pos = Vector3.new(posData.X, posData.Y, posData.Z)
+			local part = createWaypointVisual(pos, index)
+			table.insert(waypoints, {Part = part, Position = pos})
+		end
+		return true
+	end
+	return false
 end
 
-local function ensureESP(p)
-    if p == LocalPlayer or not p.Character then return end
-    local char = p.Character
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+local function saveWaypointsForCurrentGame()
+	if #waypoints == 0 then
+		if isfile and isfile(FILE_NAME) and delfile then
+			delfile(FILE_NAME)
+		end
+		return true
+	end
 
-    local hl = char:FindFirstChild("ESP_Highlight")
-    if not hl then
-        hl = Instance.new("Highlight", char)
-        hl.Name = "ESP_Highlight"
-        hl.Enabled = false
-    end
+	local rawData = {}
+	for _, wp in ipairs(waypoints) do
+		table.insert(rawData, {X = wp.Position.X, Y = wp.Position.Y, Z = wp.Position.Z})
+	end
 
-    local bb = hrp:FindFirstChild("ESP_Billboard")
-    if not bb then
-        bb = Instance.new("BillboardGui", hrp)
-        bb.Name = "ESP_Billboard"
-        bb.Size = UDim2.new(0, 150, 0, 40)
-        bb.AlwaysOnTop = true
-        bb.ExtentsOffset = Vector3.new(0, 3.5, 0)
-        bb.Enabled = false
-
-        local txtName = Instance.new("TextLabel", bb)
-        txtName.Name = "NameLabel"
-        txtName.Size = UDim2.new(1, 0, 0.5, 0)
-        txtName.BackgroundTransparency = 1
-        txtName.TextScaled = true
-        txtName.Font = Enum.Font.SourceSansBold
-
-        local txtHP = Instance.new("TextLabel", bb)
-        txtHP.Name = "HPLabel"
-        txtHP.Position = UDim2.new(0, 0, 0.5, 0)
-        txtHP.Size = UDim2.new(1, 0, 0.5, 0)
-        txtHP.BackgroundTransparency = 1
-        txtHP.TextScaled = true
-        txtHP.Font = Enum.Font.SourceSans
-    end
+	return pcall(function()
+		writefile(FILE_NAME, HttpService:JSONEncode(rawData))
+	end)
 end
 
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+btnSaveWP.MouseButton1Click:Connect(function()
+	if saveWaypointsForCurrentGame() then
+		btnSaveWP.Text = "✅ Đã Lưu File!"
+	else
+		btnSaveWP.Text = "❌ Lỗi Khi Lưu!"
+	end
+	task.wait(1.5)
+	btnSaveWP.Text = "💾 Lưu Danh Sách WP"
+end)
 
-    -- ESP Loop
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            ensureESP(p)
-            
-            local char = p.Character
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
+btnLoadWP.MouseButton1Click:Connect(function()
+	if loadWaypointsForCurrentGame() then
+		btnLoadWP.Text = "✅ Đã Tải: " .. #waypoints .. " điểm"
+	else
+		btnLoadWP.Text = "⚠️ Không Có Dữ Liệu"
+	end
+	task.wait(1.5)
+	btnLoadWP.Text = "📂 Tải Danh Sách WP"
+end)
 
-            if hum and hrp then
-                local hl = char:FindFirstChild("ESP_Highlight")
-                local bb = hrp:FindFirstChild("ESP_Billboard")
-                local isTarget = (p == targetSelectedPlayer and targetESPActive)
-
-                if hl then
-                    hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTarget
-                end
-
-                if bb then
-                    local txtName = bb:FindFirstChild("NameLabel")
-                    local txtHP = bb:FindFirstChild("HPLabel")
-                    
-                    bb.Enabled = Settings.ESP_Name or Settings.ESP_Full or isTarget
-
-                    local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    local currentColor = getHealthColor(hpPercent)
-
-                    if txtName and txtHP then
-                        txtName.Text = p.DisplayName
-                        txtName.TextColor3 = currentColor
-
-                        if Settings.ESP_Full or isTarget then
-                            txtHP.Text = string.format("[HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
-                            txtHP.TextColor3 = currentColor
-                            txtHP.Visible = true
-                        else
-                            txtHP.Visible = false
-                        end
-                    end
-
-                    if hl then
-                        hl.FillColor = currentColor
-                        hl.OutlineColor = currentColor
-                    end
-                end
-            end
-        end
-    end
-
-    -- Movement Mechanic
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChildOfClass("Humanoid") then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-
-        if Settings.WalkSpeedActive then hum.WalkSpeed = Settings.WalkSpeedVal end
-        if Settings.JumpPowerActive then
-            hum.UseJumpPower = true
-            hum.JumpPower = Settings.JumpPowerVal
-        end
-        if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
-
-        -- Shift Lock Camera Control
-        if shiftLockEnabled and hrp then
-            hum.AutoRotate = false
-            local lookPos = Camera.CFrame.LookVector
-            local rootPos = hrp.Position
-            hrp.CFrame = CFrame.new(rootPos, rootPos + Vector3.new(lookPos.X, 0, lookPos.Z))
-            
-            Camera.CFrame = Camera.CFrame * CFrame.new(1.7, 0, 0)
-        else
-            hum.AutoRotate = true
-        end
-    end
-
-    -- Aimbot Loop
-    if Settings.AimbotMode ~= "None" then
-        local target = nil
-        local shortestDist = math.huge
-        local lowestHP = math.huge
-        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") then
-                local pChar = player.Character
-                local pHum = pChar:FindFirstChildOfClass("Humanoid")
-                local pHrp = pChar.HumanoidRootPart
-
-                if pHum.Health > 0 then
-                    local pos, onScreen = Camera:WorldToViewportPoint(pHrp.Position)
-                    local distToCenter = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
-                    local distToPlayer = (pHrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-
-                    if Settings.AimbotMode == "Closest" and distToPlayer < shortestDist then
-                        shortestDist = distToPlayer
-                        target = pHrp
-                    elseif Settings.AimbotMode == "LowestHealth" and pHum.Health < lowestHP then
-                        lowestHP = pHum.Health
-                        target = pHrp
-                    elseif Settings.AimbotMode == "FOV" and onScreen and distToCenter <= Settings.FOVRadius then
-                        if distToCenter < shortestDist then
-                            shortestDist = distToCenter
-                            target = pHrp
-                        end
-                    end
-                end
-            end
-        end
-
-        if target then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-        end
-    end
+-- Tự động Load dữ liệu Waypoint khi chạy Script
+task.spawn(function()
+	task.wait(1)
+	loadWaypointsForCurrentGame()
 end)

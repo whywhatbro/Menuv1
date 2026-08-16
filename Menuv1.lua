@@ -1,10 +1,12 @@
--- Roblox Mobile Hub - Ultimate Custom Edition
+-- Roblox Mobile Hub - Ultimate Custom Edition Fixed
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -20,7 +22,6 @@ local Settings = {
     JumpPowerVal = 50,
     
     FlyActive = false,
-    FlySpeed = 50,
     
     InfJumpActive = false,
     GravityActive = false,
@@ -349,73 +350,59 @@ FOVInput.FocusLost:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 3. TAB MOVEMENT (BAY MỚI & SHIFT LOCK)
+-- 3. TAB MOVEMENT (BAY TẢI SCRIPT NGOÀI & SHIFT LOCK CHUẨN ROBLOX)
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
 addToggleWithInput(MovePage, "Trọng Lực (Gravity)", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
 addSimpleToggle(MovePage, "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
 
--- Nút nổi Bay (Fly Toggle Floating Button)
-local FlyFloatBtn = Instance.new("TextButton", ScreenGui)
-FlyFloatBtn.Size = UDim2.new(0, 60, 0, 35)
-FlyFloatBtn.Position = UDim2.new(0.02, 0, 0.25, 0)
-FlyFloatBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-FlyFloatBtn.Text = "FLY: OFF"
-FlyFloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FlyFloatBtn.TextSize = 11
-FlyFloatBtn.Visible = false
-FlyFloatBtn.Active = true
-FlyFloatBtn.Draggable = true
-
-local isFlyingToggle = false
-FlyFloatBtn.MouseButton1Click:Connect(function()
-    isFlyingToggle = not isFlyingToggle
-    FlyFloatBtn.BackgroundColor3 = isFlyingToggle and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-    FlyFloatBtn.Text = isFlyingToggle and "FLY: ON" or "FLY: OFF"
+-- Bật Script Bay FlyGuiV3
+addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
+    if state then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
 end)
 
-addToggleWithInput(MovePage, "Kích Hoạt Nút Bay Nổi", Settings.FlySpeed, function(state)
-    Settings.FlyActive = state
-    FlyFloatBtn.Visible = state
-    if not state then
-        isFlyingToggle = false
-        FlyFloatBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-        FlyFloatBtn.Text = "FLY: OFF"
-    end
-end, function(val) Settings.FlySpeed = val end)
-
--- Shift Lock Floating System
+-- Nút Shift Lock Nổi Chuẩn Texture Roblox PC
 local ShiftLockFloatBtn = Instance.new("ImageButton", ScreenGui)
-ShiftLockFloatBtn.Size = UDim2.new(0, 45, 0, 45)
+ShiftLockFloatBtn.Size = UDim2.new(0, 50, 0, 50)
 ShiftLockFloatBtn.Position = UDim2.new(0.85, 0, 0.5, 0)
-ShiftLockFloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ShiftLockFloatBtn.BackgroundTransparency = 0.5
-ShiftLockFloatBtn.Image = "rbxassetid://6031068433" -- Icon Shift Lock chuẩn
+ShiftLockFloatBtn.BackgroundTransparency = 1
+ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off) chuẩn Roblox
 ShiftLockFloatBtn.Visible = false
 ShiftLockFloatBtn.Active = true
 ShiftLockFloatBtn.Draggable = true
 
+-- Crosshair Tâm Ngắm Chuẩn Roblox PC
 local ShiftLockCrosshair = Instance.new("ImageLabel", ScreenGui)
-ShiftLockCrosshair.Size = UDim2.new(0, 16, 0, 16)
-ShiftLockCrosshair.Position = UDim2.new(0.5, -8, 0.5, -8)
+ShiftLockCrosshair.Size = UDim2.new(0, 32, 0, 32)
+ShiftLockCrosshair.Position = UDim2.new(0.5, -16, 0.5, -16)
 ShiftLockCrosshair.BackgroundTransparency = 1
-ShiftLockCrosshair.Image = "rbxassetid://6031068433"
+ShiftLockCrosshair.Image = "rbxassetid://11822818625" -- Crosshair Chuẩn Roblox PC
 ShiftLockCrosshair.Visible = false
 
 local shiftLockEnabled = false
+
 ShiftLockFloatBtn.MouseButton1Click:Connect(function()
     shiftLockEnabled = not shiftLockEnabled
-    ShiftLockCrosshair.Visible = shiftLockEnabled
-    ShiftLockFloatBtn.BackgroundColor3 = shiftLockEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(0, 0, 0)
+    
+    if shiftLockEnabled then
+        ShiftLockFloatBtn.Image = "rbxassetid://10734923868" -- Texture ShiftLock Bật (On) chuẩn Roblox
+        ShiftLockCrosshair.Visible = true
+    else
+        ShiftLockFloatBtn.Image = "rbxassetid://10734923617" -- Texture ShiftLock Tắt (Off)
+        ShiftLockCrosshair.Visible = false
+    end
 end)
 
-addSimpleToggle(MovePage, "Bật Nút Shift Lock Nổi", function(state)
+addSimpleToggle(MovePage, "Bật Nút Shift Lock Nổi Chuẩn PC", function(state)
     Settings.ShiftLockActive = state
     ShiftLockFloatBtn.Visible = state
     if not state then
         shiftLockEnabled = false
         ShiftLockCrosshair.Visible = false
+        ShiftLockFloatBtn.Image = "rbxassetid://10734923617"
     end
 end)
 
@@ -435,7 +422,7 @@ addSimpleToggle(VisualPage, "Mở Khoá Góc Nhìn Camera", function(val)
 end)
 
 ---------------------------------------------------------
--- 5. TAB WORLD (XÓA SƯƠNG MÙ & GIẢM LAG)
+-- 5. TAB WORLD
 ---------------------------------------------------------
 addSimpleToggle(WorldPage, "Xóa Sương Mù (Remove Fog)", function(val)
     Settings.RemoveFogActive = val
@@ -549,11 +536,10 @@ TargetESPBtn.MouseButton1Click:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 7. TAB AUTO CLICK & FLOATING CONTROLLER
+-- 7. TAB AUTO CLICK & CONTROLLER
 ---------------------------------------------------------
 local AutoClickPoints = {}
 
--- Thanh công cụ Auto Click Nổi ngoài màn hình
 local ACBar = Instance.new("Frame", ScreenGui)
 ACBar.Size = UDim2.new(0, 160, 0, 40)
 ACBar.Position = UDim2.new(0.02, 0, 0.35, 0)
@@ -586,7 +572,6 @@ ACSettingsBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
 ACSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ACSettingsBtn.TextSize = 14
 
--- Menu Cài đặt Mini
 local ACSettingsFrame = Instance.new("Frame", ScreenGui)
 ACSettingsFrame.Size = UDim2.new(0, 200, 0, 140)
 ACSettingsFrame.Position = UDim2.new(0.02, 0, 0.43, 0)
@@ -635,7 +620,6 @@ ACSizeBox.FocusLost:Connect(function()
         Settings.AC_CircleSize = val
         for _, p in pairs(AutoClickPoints) do
             p.Frame.Size = UDim2.new(0, val, 0, val)
-            p.Frame.UICorner.CornerRadius = UDim.new(1, 0)
         end
     end
 end)
@@ -644,7 +628,6 @@ ACSettingsBtn.MouseButton1Click:Connect(function()
     ACSettingsFrame.Visible = not ACSettingsFrame.Visible
 end)
 
--- Tạo điểm Auto Click
 local function createAutoClickPoint()
     local id = #AutoClickPoints + 1
     local pFrame = Instance.new("Frame", ScreenGui)
@@ -670,13 +653,10 @@ local function createAutoClickPoint()
     lbl.TextSize = 14
     lbl.Font = Enum.Font.SourceSansBold
 
-    table.insert(AutoClickPoints, {Frame = pFrame, UICorner = corner})
+    table.insert(AutoClickPoints, {Frame = pFrame})
 end
 
 ACAddBtn.MouseButton1Click:Connect(createAutoClickPoint)
-
--- Logic Chạy Auto Click
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 ACRunBtn.MouseButton1Click:Connect(function()
     Settings.AC_Running = not Settings.AC_Running
@@ -693,7 +673,7 @@ ACRunBtn.MouseButton1Click:Connect(function()
                 end
 
                 for i, p in ipairs(AutoClickPoints) do
-                    if not Settings.AC_Running then break end
+                    if not Settings.AC_Running me break end
                     local pos = p.Frame.AbsolutePosition + (p.Frame.AbsoluteSize / 2)
                     VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, true, game, 0)
                     task.wait(0.05)
@@ -715,7 +695,7 @@ ACRunBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-addSimpleToggle(AutoClickPage, "Bật Thanh Công Cụ Auto Click", function(state)
+addSimpleToggle(AutoClickPage, "Bật Thanh Auto Click", function(state)
     ACBar.Visible = state
     if not state then
         ACSettingsFrame.Visible = false
@@ -734,131 +714,124 @@ ClearACBtn.MouseButton1Click:Connect(function()
 end)
 
 ---------------------------------------------------------
--- HỆ THỐNG XỬ LÝ VÒNG LẶP RENDERSTEPPED & GAMEPLAY
+-- HỆ THỐNG ESP & GAMEPLAY LOOP
 ---------------------------------------------------------
-
--- 1. Nhảy Vô Hạn
 UserInputService.JumpRequest:Connect(function()
     if Settings.InfJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
         LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end
 end)
 
--- 2. Hàm Tính Màu Máu Chi Tiết
 local function getHealthColor(percent)
     if percent >= 0.99 then
-        return Color3.fromRGB(0, 255, 0) -- 100% Xanh lá
+        return Color3.fromRGB(0, 255, 0)
     elseif percent >= 0.75 then
-        return Color3.fromRGB(153, 255, 0) -- 75% Xanh chuối
+        return Color3.fromRGB(153, 255, 0)
     elseif percent >= 0.50 then
-        return Color3.fromRGB(255, 255, 0) -- 50% Vàng
+        return Color3.fromRGB(255, 255, 0)
     elseif percent >= 0.35 then
-        return Color3.fromRGB(255, 128, 0) -- 35% Cam
+        return Color3.fromRGB(255, 128, 0)
     else
-        return Color3.fromRGB(255, 0, 0) -- <=20% Đỏ
+        return Color3.fromRGB(255, 0, 0)
     end
 end
 
--- 3. Tạo ESP Cho Nhân Vật
-local function setupESPForCharacter(char)
-    if not char then return end
-    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+-- Tự động quét và cập nhật ESP định kỳ
+local function ensureESP(p)
+    if p == LocalPlayer or not p.Character then return end
+    local char = p.Character
+    local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    if char:FindFirstChild("ESP_Highlight") then char.ESP_Highlight:Destroy() end
-    if hrp:FindFirstChild("ESP_Billboard") then hrp.ESP_Billboard:Destroy() end
+    local hl = char:FindFirstChild("ESP_Highlight")
+    if not hl then
+        hl = Instance.new("Highlight", char)
+        hl.Name = "ESP_Highlight"
+        hl.Enabled = false
+    end
 
-    local hl = Instance.new("Highlight", char)
-    hl.Name = "ESP_Highlight"
-    hl.Enabled = false
+    local bb = hrp:FindFirstChild("ESP_Billboard")
+    if not bb then
+        bb = Instance.new("BillboardGui", hrp)
+        bb.Name = "ESP_Billboard"
+        bb.Size = UDim2.new(0, 150, 0, 40)
+        bb.AlwaysOnTop = true
+        bb.ExtentsOffset = Vector3.new(0, 3.5, 0)
+        bb.Enabled = false
 
-    local bb = Instance.new("BillboardGui", hrp)
-    bb.Name = "ESP_Billboard"
-    bb.Size = UDim2.new(0, 150, 0, 40)
-    bb.AlwaysOnTop = true
-    bb.ExtentsOffset = Vector3.new(0, 3.5, 0)
-    bb.Enabled = false
+        local txtName = Instance.new("TextLabel", bb)
+        txtName.Name = "NameLabel"
+        txtName.Size = UDim2.new(1, 0, 0.5, 0)
+        txtName.BackgroundTransparency = 1
+        txtName.TextScaled = true
+        txtName.Font = Enum.Font.SourceSansBold
 
-    local txtName = Instance.new("TextLabel", bb)
-    txtName.Name = "NameLabel"
-    txtName.Size = UDim2.new(1, 0, 0.5, 0)
-    txtName.BackgroundTransparency = 1
-    txtName.TextScaled = true
-    txtName.Font = Enum.Font.SourceSansBold
-
-    local txtHP = Instance.new("TextLabel", bb)
-    txtHP.Name = "HPLabel"
-    txtHP.Position = UDim2.new(0, 0, 0.5, 0)
-    txtHP.Size = UDim2.new(1, 0, 0.5, 0)
-    txtHP.BackgroundTransparency = 1
-    txtHP.TextScaled = true
-    txtHP.Font = Enum.Font.SourceSans
+        local txtHP = Instance.new("TextLabel", bb)
+        txtHP.Name = "HPLabel"
+        txtHP.Position = UDim2.new(0, 0, 0.5, 0)
+        txtHP.Size = UDim2.new(1, 0, 0.5, 0)
+        txtHP.BackgroundTransparency = 1
+        txtHP.TextScaled = true
+        txtHP.Font = Enum.Font.SourceSans
+    end
 end
 
-local function applyESP(p)
-    if p == LocalPlayer then return end
-    if p.Character then setupESPForCharacter(p.Character) end
-    p.CharacterAdded:Connect(setupESPForCharacter)
-end
-
--- Áp dụng ngay lập tức cho người chơi hiện có & mới vào
-for _, p in pairs(Players:GetPlayers()) do applyESP(p) end
-Players.PlayerAdded:Connect(applyESP)
-
--- Vòng lặp RenderStepped
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- ESP Loop
+    -- Cập nhật ESP
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+        if p ~= LocalPlayer and p.Character then
+            ensureESP(p)
+            
             local char = p.Character
-            local hum = char.Humanoid
-            local hrp = char.HumanoidRootPart
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
 
-            local hl = char:FindFirstChild("ESP_Highlight")
-            local bb = hrp:FindFirstChild("ESP_Billboard")
-
-            local isTargetPlayer = (p == targetSelectedPlayer and targetESPActive)
-
-            if hl then
-                hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTargetPlayer
-            end
-
-            if bb then
-                local txtName = bb:FindFirstChild("NameLabel")
-                local txtHP = bb:FindFirstChild("HPLabel")
-                
-                bb.Enabled = Settings.ESP_Name or Settings.ESP_Full or isTargetPlayer
-
-                local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                local currentColor = getHealthColor(hpPercent)
-
-                if txtName and txtHP then
-                    txtName.Text = p.DisplayName
-                    txtName.TextColor3 = currentColor
-
-                    if Settings.ESP_Full or isTargetPlayer then
-                        txtHP.Text = string.format("[HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
-                        txtHP.TextColor3 = currentColor
-                        txtHP.Visible = true
-                    else
-                        txtHP.Visible = false
-                    end
-                end
+            if hum and hrp then
+                local hl = char:FindFirstChild("ESP_Highlight")
+                local bb = hrp:FindFirstChild("ESP_Billboard")
+                local isTarget = (p == targetSelectedPlayer and targetESPActive)
 
                 if hl then
-                    hl.FillColor = currentColor
-                    hl.OutlineColor = currentColor
+                    hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTarget
+                end
+
+                if bb then
+                    local txtName = bb:FindFirstChild("NameLabel")
+                    local txtHP = bb:FindFirstChild("HPLabel")
+                    
+                    bb.Enabled = Settings.ESP_Name or Settings.ESP_Full or isTarget
+
+                    local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                    local currentColor = getHealthColor(hpPercent)
+
+                    if txtName and txtHP then
+                        txtName.Text = p.DisplayName
+                        txtName.TextColor3 = currentColor
+
+                        if Settings.ESP_Full or isTarget then
+                            txtHP.Text = string.format("[HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
+                            txtHP.TextColor3 = currentColor
+                            txtHP.Visible = true
+                        else
+                            txtHP.Visible = false
+                        end
+                    end
+
+                    if hl then
+                        hl.FillColor = currentColor
+                        hl.OutlineColor = currentColor
+                    end
                 end
             end
         end
     end
 
-    -- Character Movement & Fly Mechanics
+    -- Movement Mechanics
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        local hum = char.Humanoid
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        local hum = char:FindFirstChildOfClass("Humanoid")
         local hrp = char:FindFirstChild("HumanoidRootPart")
 
         if Settings.WalkSpeedActive then hum.WalkSpeed = Settings.WalkSpeedVal end
@@ -868,23 +841,17 @@ RunService.RenderStepped:Connect(function()
         end
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
 
-        -- Bay theo đúng hướng nhìn Camera
-        if Settings.FlyActive and isFlyingToggle and hrp then
-            local moveDir = hum.MoveDirection
-            if moveDir.Magnitude > 0 then
-                -- Tính toán Vector hướng của Camera
-                local camCFrame = Camera.CFrame
-                local flyVector = (camCFrame.LookVector * -moveDir.Z) + (camCFrame.RightVector * moveDir.X)
-                hrp.Velocity = flyVector.Unit * Settings.FlySpeed
-            else
-                hrp.Velocity = Vector3.new(0, 0, 0)
-            end
-        end
-
-        -- Shift Lock Alignment
+        -- Xử lý Shift Lock Chuẩn Roblox PC
         if shiftLockEnabled and hrp then
+            hum.AutoRotate = false
             local lookPos = Camera.CFrame.LookVector
-            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookPos.X, 0, lookPos.Z))
+            local rootPos = hrp.Position
+            hrp.CFrame = CFrame.new(rootPos, rootPos + Vector3.new(lookPos.X, 0, lookPos.Z))
+            
+            -- Đẩy camera về dạng khóa lệch vai nhẹ chuẩn PC
+            Camera.CFrame = Camera.CFrame * CFrame.new(1.7, 0, 0)
+        else
+            hum.AutoRotate = true
         end
     end
 
@@ -896,9 +863,9 @@ RunService.RenderStepped:Connect(function()
         local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
         for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") then
                 local pChar = player.Character
-                local pHum = pChar.Humanoid
+                local pHum = pChar:FindFirstChildOfClass("Humanoid")
                 local pHrp = pChar.HumanoidRootPart
 
                 if pHum.Health > 0 then

@@ -28,6 +28,8 @@ local Settings = {
     
     FullBrightActive = false,
     UnlockCamActive = false,
+    CamNoclipActive = false,
+    XRayActive = false,
     RemoveFogActive = false,
     
     ESP_Name = false,
@@ -47,6 +49,14 @@ local Settings = {
     WP_Mode = "Fly",
     WP_FlySpeed = 50,
     WP_Running = false
+}
+
+local OriginalLighting = {
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    GlobalShadows = Lighting.GlobalShadows
 }
 
 local ServerStartTime = os.time()
@@ -153,7 +163,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v3.0"
+Title.Text = "⚡ MOBILE ADVANCED HUB v3.1"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -247,7 +257,6 @@ local MiscPage     = createTab("TỔNG HỢP", 7)
 ---------------------------------------------------------
 -- UI HELPER FUNCTIONS & CONFIRMATION MODAL
 ---------------------------------------------------------
--- Modal Xác Nhận Chống Trượt Nhầm (Anti-Missclick Modal)
 local ConfirmModal = Instance.new("Frame", ScreenGui)
 ConfirmModal.Size = UDim2.new(0, 320, 0, 160)
 ConfirmModal.Position = UDim2.new(0.5, -160, 0.5, -80)
@@ -520,7 +529,7 @@ loadServerPlayers()
 
 addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
 
------------------- HỆ THỐNG ĐỔI SERVER (SERVER HOPPING VỚI CONFIRM) ------------------
+------------------ HỆ THỐNG ĐỔI SERVER ------------------
 local ServerHopFrame = Instance.new("Frame", ServerPage)
 ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
 ServerHopFrame.BackgroundTransparency = 1
@@ -626,7 +635,7 @@ SmallServerBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
------------------- KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI NÂNG CẤP (5 NGƯỜI/TRANG, DISPLAYNAME + USERNAME) ------------------
+------------------ KHUNG TÌM KIẾM NGƯỜI CHƠI (BỔ SUNG HIỂN THỊ AVATAR) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
 TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 280)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
@@ -676,7 +685,6 @@ UserStatusLabel.Font = Enum.Font.Gotham
 UserStatusLabel.TextSize = 9
 UserStatusLabel.BackgroundTransparency = 1
 
--- Khung hiển thị 5 kết quả / trang
 local SearchResultsFrame = Instance.new("Frame", TargetUserContainer)
 SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.23, 0)
 SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 185)
@@ -685,7 +693,6 @@ SearchResultsFrame.BackgroundTransparency = 1
 local SRLayout = Instance.new("UIListLayout", SearchResultsFrame)
 SRLayout.Padding = UDim.new(0, 4)
 
--- Khung phân trang (Pagination 1..N)
 local PaginationFrame = Instance.new("Frame", TargetUserContainer)
 PaginationFrame.Position = UDim2.new(0.02, 0, 0.90, 0)
 PaginationFrame.Size = UDim2.new(0.96, 0, 0, 22)
@@ -729,9 +736,22 @@ local function renderSearchPage(page)
         itemFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
         local IFC = Instance.new("UICorner", itemFrame) IFC.CornerRadius = UDim.new(0, 4)
 
+        -- Avatar hiển thị trong khung tìm kiếm
+        local searchAvatarImg = Instance.new("ImageLabel", itemFrame)
+        searchAvatarImg.Size = UDim2.new(0, 27, 0, 27)
+        searchAvatarImg.Position = UDim2.new(0, 3, 0.5, -13.5)
+        searchAvatarImg.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+        local SAFCorner = Instance.new("UICorner", searchAvatarImg) SAFCorner.CornerRadius = UDim.new(1, 0)
+
+        task.spawn(function()
+            pcall(function()
+                searchAvatarImg.Image = Players:GetUserThumbnailAsync(uData.userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+            end)
+        end)
+
         local uInfoLabel = Instance.new("TextLabel", itemFrame)
-        uInfoLabel.Position = UDim2.new(0, 6, 0, 0)
-        uInfoLabel.Size = UDim2.new(0.72, 0, 1, 0)
+        uInfoLabel.Position = UDim2.new(0, 35, 0, 0)
+        uInfoLabel.Size = UDim2.new(0.62, 0, 1, 0)
         uInfoLabel.Text = string.format("<b>%s</b> (@%s)", uData.displayName, uData.username)
         uInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         uInfoLabel.RichText = true
@@ -771,7 +791,6 @@ local function renderSearchPage(page)
         end)
     end
 
-    -- Render các nút số trang 1..N
     if totalPages > 1 then
         for p = 1, totalPages do
             local pBtn = Instance.new("TextButton", PaginationFrame)
@@ -803,7 +822,6 @@ local function ExecuteUserSearch()
     task.spawn(function()
         local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
         
-        -- Ưu tiên tìm trong Server hiện tại trước
         for _, p in pairs(Players:GetPlayers()) do
             if p.Name:lower():find(query:lower(), 1, true) or p.DisplayName:lower():find(query:lower(), 1, true) then
                 table.insert(currentSearchResults, {
@@ -817,7 +835,6 @@ local function ExecuteUserSearch()
             end
         end
 
-        -- Tìm kiếm qua Roblox API nếu chưa có đủ kết quả
         pcall(function()
             local searchUrl = "https://users.roproxy.com/v1/users/search?keyword=" .. HttpService:UrlEncode(query) .. "&limit=10"
             local res = reqFunc and reqFunc({Url = searchUrl, Method = "GET"}) or {Body = game:HttpGet(searchUrl)}
@@ -905,17 +922,60 @@ addActionButton(MovePage, "🔒 Bật Script Shift Lock (Universal)", function()
 end)
 
 ---------------------------------------------------------
--- 4. TAB VISUAL
+-- 4. TAB VISUAL (BỔ SUNG FULLBRIGHT FIX, X-RAY & NOCLIP CAMERA)
 ---------------------------------------------------------
 addSimpleToggle(VisualPage, "ESP Tên", function(val) Settings.ESP_Name = val end)
 addSimpleToggle(VisualPage, "ESP Viền Sáng", function(val) Settings.ESP_Highlight = val end)
 addSimpleToggle(VisualPage, "Full ESP (Hiển thị Máu + Tên)", function(val) Settings.ESP_Full = val end)
-addSimpleToggle(VisualPage, "Full Bright (Màn Hình Sáng)", function(val)
-    Settings.FullBrightActive = val
-    Lighting.Ambient = val and Color3.new(1,1,1) or Color3.fromRGB(127,127,127)
-    Lighting.GlobalShadows = not val
+
+-- Tính năng X-Ray
+local function ApplyXRay(active)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and not obj.Parent:FindFirstChildOfClass("Humanoid") then
+            if active then
+                if not obj:FindFirstChild("OriginalTransparency") then
+                    local val = Instance.new("NumberValue", obj)
+                    val.Name = "OriginalTransparency"
+                    val.Value = obj.Transparency
+                end
+                obj.Transparency = 0.6
+            else
+                if obj:FindFirstChild("OriginalTransparency") then
+                    obj.Transparency = obj.OriginalTransparency.Value
+                    obj.OriginalTransparency:Destroy()
+                end
+            end
+        end
+    end
+end
+
+addSimpleToggle(VisualPage, "X-Ray (Nhìn Xuyên Tường)", function(val)
+    Settings.XRayActive = val
+    ApplyXRay(val)
 end)
+
+-- FullBright cải tiến: Khóa thời gian & độ sáng không lo bị server chuyển ngày/đêm
+addSimpleToggle(VisualPage, "Full Bright (Màn Hình Sáng Vô Hạn)", function(val)
+    Settings.FullBrightActive = val
+    if not val then
+        Lighting.Ambient = OriginalLighting.Ambient
+        Lighting.OutdoorAmbient = OriginalLighting.OutdoorAmbient
+        Lighting.Brightness = OriginalLighting.Brightness
+        Lighting.GlobalShadows = OriginalLighting.GlobalShadows
+    end
+end)
+
+addSimpleToggle(VisualPage, "Noclip Camera (Nhìn Qua Tường)", function(val)
+    Settings.CamNoclipActive = val
+    if val then
+        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
+    else
+        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Zoom
+    end
+end)
+
 addSimpleToggle(VisualPage, "Mở Khoá Góc Nhìn Camera", function(val)
+    Settings.UnlockCamActive = val
     LocalPlayer.CameraMaxZoomDistance = val and 99999 or 128
 end)
 
@@ -1467,6 +1527,20 @@ end
 
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    -- Đảm bảo FullBright hoạt động liên tục bất chấp chuyển ngày/đêm
+    if Settings.FullBrightActive then
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+        Lighting.ClockTime = 14
+    end
+
+    -- Khóa Noclip Camera liên tục
+    if Settings.CamNoclipActive and LocalPlayer.DevCameraOcclusionMode ~= Enum.DevCameraOcclusionMode.Invisicam then
+        LocalPlayer.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
+    end
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then

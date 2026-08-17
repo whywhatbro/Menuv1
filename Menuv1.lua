@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition Fixed & Upgraded (Responsive UI)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Tab UI & ShiftLock)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -46,8 +46,8 @@ local Settings = {
     AC_Running = false,
 
     -- Waypoint Settings
-    WP_Mode = "Fly", -- "Fly" hoặc "Teleport"
-    WP_FlySpeed = 50, -- Studs/Giây
+    WP_Mode = "Fly",
+    WP_FlySpeed = 50,
     WP_Running = false
 }
 
@@ -68,7 +68,7 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH (ĐÃ CẢI TIẾN TAB SCROLL)
+-- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH
 ---------------------------------------------------------
 local function GetSafeParent()
     local success, parent = pcall(function()
@@ -113,7 +113,6 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Viền Menu
 local MainFrameStroke = Instance.new("UIStroke", MainFrame)
 MainFrameStroke.Color = Color3.fromRGB(0, 170, 255)
 MainFrameStroke.Thickness = 3
@@ -136,25 +135,21 @@ Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 ---------------------------------------------------------
--- THANH NGUYÊN MẪU TAB CUỘN NGANG (FIX LỖI TRÀN TAB)
+-- FIX THANH TAB CUỘN NGANG VÀ NỘI DUNG DISPLAY
 ---------------------------------------------------------
 local TabBarScroll = Instance.new("ScrollingFrame", MainFrame)
 TabBarScroll.Position = UDim2.new(0, 0, 0, 30)
 TabBarScroll.Size = UDim2.new(1, 0, 0, 35)
 TabBarScroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TabBarScroll.CanvasSize = UDim2.new(0, 0, 0, 0) -- Tự điều chỉnh tự động qua UIListLayout
-TabBarScroll.ScrollBarThickness = 0 -- Ẩn thanh cuộn cho đẹp mắt, vuốt bình thường
+TabBarScroll.ScrollBarThickness = 2
+TabBarScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
 TabBarScroll.ScrollingDirection = Enum.ScrollingDirection.Horizontal
+TabBarScroll.CanvasSize = UDim2.new(0, 650, 0, 0) -- Chiều rộng cố định cho 7 Tab vuốt ngang thoải mái
 
 local TabLayout = Instance.new("UIListLayout", TabBarScroll)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 TabLayout.Padding = UDim.new(0, 4)
-
--- Tự động tính kích thước cuộn dựa trên số lượng nút Tab
-TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    TabBarScroll.CanvasSize = UDim2.new(0, TabLayout.AbsoluteContentSize.X + 10, 0, 0)
-end)
 
 local ContentFrame = Instance.new("Frame", MainFrame)
 ContentFrame.Position = UDim2.new(0, 0, 0, 65)
@@ -162,10 +157,11 @@ ContentFrame.Size = UDim2.new(1, 0, 1, -65)
 ContentFrame.BackgroundTransparency = 1
 
 local Pages = {}
+local TabButtons = {}
 
 local function createTab(name, order)
     local btn = Instance.new("TextButton", TabBarScroll)
-    btn.Size = UDim2.new(0, 85, 1, 0) -- Chiều rộng cố định cho mỗi nút Tab
+    btn.Size = UDim2.new(0, 85, 1, 0)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -187,6 +183,7 @@ local function createTab(name, order)
     layout.Padding = UDim.new(0, 5)
 
     Pages[name] = page
+    table.insert(TabButtons, btn)
 
     if order == 1 then
         btn.TextColor3 = Color3.fromRGB(255, 255, 0)
@@ -194,12 +191,10 @@ local function createTab(name, order)
     end
 
     btn.MouseButton1Click:Connect(function()
-        for _, p in pairs(ContentFrame:GetChildren()) do p.Visible = false end
-        for _, b in pairs(TabBarScroll:GetChildren()) do
-            if b:IsA("TextButton") then 
-                b.TextColor3 = Color3.fromRGB(180, 180, 180)
-                b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-            end
+        for _, p in pairs(Pages) do p.Visible = false end
+        for _, b in pairs(TabButtons) do
+            b.TextColor3 = Color3.fromRGB(180, 180, 180)
+            b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         end
         page.Visible = true
         btn.TextColor3 = Color3.fromRGB(255, 255, 0)
@@ -413,7 +408,7 @@ FOVInput.FocusLost:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 3. TAB MOVEMENT & SỬA NÚT SHIFTLOCK THEO YÊU CẦU
+-- 3. TAB MOVEMENT & SHIFT LOCK UNIVERSAL
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
@@ -428,8 +423,6 @@ addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
     end
 end)
 
--- Sửa nút ShiftLock theo đúng Script yêu cầu
-local shiftLockExecuted = false
 addSimpleToggle(MovePage, "Kích Hoạt Shift Lock Universal", function(state)
     if state then
         pcall(function()
@@ -572,8 +565,6 @@ end)
 ---------------------------------------------------------
 -- 7. TAB TỔNG HỢP (AUTO CLICK & WAYPOINT SYSTEM)
 ---------------------------------------------------------
-
------------------- AUTO CLICK NỔI TỐI ƯU ------------------
 local AutoClickPoints = {}
 
 local ACBar = Instance.new("Frame", ScreenGui)
@@ -593,32 +584,27 @@ ACAddBtn.Size = UDim2.new(0, 40, 0, 30)
 ACAddBtn.Text = "+"
 ACAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 ACAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ACAddBtn.TextSize = 18
 
 local ACDelBtn = Instance.new("TextButton", ACBar)
 ACDelBtn.Size = UDim2.new(0, 40, 0, 30)
 ACDelBtn.Text = "-"
 ACDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
 ACDelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ACDelBtn.TextSize = 18
 
 local ACClearBtn = Instance.new("TextButton", ACBar)
 ACClearBtn.Size = UDim2.new(0, 40, 0, 30)
 ACClearBtn.Text = "🗑"
 ACClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-ACClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local ACRunBtn = Instance.new("TextButton", ACBar)
 ACRunBtn.Size = UDim2.new(0, 40, 0, 30)
 ACRunBtn.Text = "▶"
 ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-ACRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local ACSettingsBtn = Instance.new("TextButton", ACBar)
 ACSettingsBtn.Size = UDim2.new(0, 40, 0, 30)
 ACSettingsBtn.Text = "⚙"
 ACSettingsBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
-ACSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local ACSettingsFrame = Instance.new("Frame", ScreenGui)
 ACSettingsFrame.Size = UDim2.new(0, 200, 0, 170)
@@ -633,7 +619,6 @@ ACLoopInfBtn.Size = UDim2.new(0.9, 0, 0, 28)
 ACLoopInfBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 ACLoopInfBtn.Text = "Lặp Vô Hạn: ON"
 ACLoopInfBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-ACLoopInfBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 ACLoopInfBtn.MouseButton1Click:Connect(function()
     Settings.AC_LoopInfinite = not Settings.AC_LoopInfinite
@@ -645,44 +630,12 @@ local ACDelayBox = Instance.new("TextBox", ACSettingsFrame)
 ACDelayBox.Size = UDim2.new(0.9, 0, 0, 28)
 ACDelayBox.Position = UDim2.new(0.05, 0, 0.28, 0)
 ACDelayBox.Text = tostring(Settings.AC_Delay)
-ACDelayBox.PlaceholderText = "Tốc độ nhấn (giây)"
 ACDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 ACDelayBox.TextColor3 = Color3.fromRGB(0, 255, 255)
 
 ACDelayBox.FocusLost:Connect(function()
     local val = tonumber(ACDelayBox.Text)
     if val then Settings.AC_Delay = math.max(0.01, val) end
-end)
-
-local ACLoopCountBox = Instance.new("TextBox", ACSettingsFrame)
-ACLoopCountBox.Size = UDim2.new(0.9, 0, 0, 28)
-ACLoopCountBox.Position = UDim2.new(0.05, 0, 0.51, 0)
-ACLoopCountBox.Text = tostring(Settings.AC_LoopCount)
-ACLoopCountBox.PlaceholderText = "Số vòng lặp"
-ACLoopCountBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ACLoopCountBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-ACLoopCountBox.FocusLost:Connect(function()
-    local val = tonumber(ACLoopCountBox.Text)
-    if val then Settings.AC_LoopCount = val end
-end)
-
-local ACSizeBox = Instance.new("TextBox", ACSettingsFrame)
-ACSizeBox.Size = UDim2.new(0.9, 0, 0, 28)
-ACSizeBox.Position = UDim2.new(0.05, 0, 0.74, 0)
-ACSizeBox.Text = tostring(Settings.AC_CircleSize)
-ACSizeBox.PlaceholderText = "Kích thước vòng"
-ACSizeBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ACSizeBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-ACSizeBox.FocusLost:Connect(function()
-    local val = tonumber(ACSizeBox.Text)
-    if val then
-        Settings.AC_CircleSize = val
-        for _, p in pairs(AutoClickPoints) do
-            p.Frame.Size = UDim2.new(0, val, 0, val)
-        end
-    end
 end)
 
 ACSettingsBtn.MouseButton1Click:Connect(function()
@@ -711,14 +664,11 @@ local function createAutoClickPoint()
     lbl.BackgroundTransparency = 1
     lbl.Text = tostring(id)
     lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.TextSize = 14
-    lbl.Font = Enum.Font.SourceSansBold
 
     table.insert(AutoClickPoints, {Frame = pFrame})
 end
 
 ACAddBtn.MouseButton1Click:Connect(createAutoClickPoint)
-
 ACDelBtn.MouseButton1Click:Connect(function()
     if #AutoClickPoints > 0 then
         local last = AutoClickPoints[#AutoClickPoints]
@@ -726,11 +676,8 @@ ACDelBtn.MouseButton1Click:Connect(function()
         table.remove(AutoClickPoints, #AutoClickPoints)
     end
 end)
-
 ACClearBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(AutoClickPoints) do
-        p.Frame:Destroy()
-    end
+    for _, p in pairs(AutoClickPoints) do p.Frame:Destroy() end
     AutoClickPoints = {}
 end)
 
@@ -756,11 +703,9 @@ ACRunBtn.MouseButton1Click:Connect(function()
                     VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, false, game, 0)
                     task.wait(Settings.AC_Delay)
                 end
-
                 loops = loops + 1
                 task.wait(0.05)
             end
-            
             Settings.AC_Running = false
             ACRunBtn.Text = "▶"
             ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
@@ -773,16 +718,11 @@ end)
 
 addSimpleToggle(MiscPage, "Bật Thanh Auto Click Nổi", function(state)
     ACBar.Visible = state
-    if not state then
-        ACSettingsFrame.Visible = false
-        Settings.AC_Running = false
-    end
+    if not state then ACSettingsFrame.Visible = false Settings.AC_Running = false end
 end)
 
 ------------------ HỆ THỐNG WAYPOINT CAO CẤP ------------------
 local WaypointList = {}
-local SavedWaypoints = {}
-
 local WPFolder = workspace:FindFirstChild("MobileHubWaypoints") or Instance.new("Folder", workspace)
 WPFolder.Name = "MobileHubWaypoints"
 
@@ -802,75 +742,21 @@ local WPAddBtn = Instance.new("TextButton", WPBar)
 WPAddBtn.Size = UDim2.new(0, 40, 0, 30)
 WPAddBtn.Text = "📍+"
 WPAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-WPAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local WPRunBtn = Instance.new("TextButton", WPBar)
 WPRunBtn.Size = UDim2.new(0, 40, 0, 30)
 WPRunBtn.Text = "▶"
 WPRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-WPRunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local WPDelBtn = Instance.new("TextButton", WPBar)
 WPDelBtn.Size = UDim2.new(0, 40, 0, 30)
 WPDelBtn.Text = "📍-"
 WPDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
-WPDelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local WPClearBtn = Instance.new("TextButton", WPBar)
 WPClearBtn.Size = UDim2.new(0, 40, 0, 30)
 WPClearBtn.Text = "🗑"
 WPClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-WPClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local WPSettingsBtn = Instance.new("TextButton", WPBar)
-WPSettingsBtn.Size = UDim2.new(0, 40, 0, 30)
-WPSettingsBtn.Text = "⚙"
-WPSettingsBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
-WPSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local WPSettingsFrame = Instance.new("Frame", ScreenGui)
-WPSettingsFrame.Size = UDim2.new(0, 210, 0, 120)
-WPSettingsFrame.Position = UDim2.new(0.78, 0, 0.35, 0)
-WPSettingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-WPSettingsFrame.Visible = false
-WPSettingsFrame.Active = true
-WPSettingsFrame.Draggable = true
-
-local WPModeBtn = Instance.new("TextButton", WPSettingsFrame)
-WPModeBtn.Size = UDim2.new(0.9, 0, 0, 35)
-WPModeBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
-WPModeBtn.Text = "Chế độ: Bay Waypoint"
-WPModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-WPModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local WPSpeedBox = Instance.new("TextBox", WPSettingsFrame)
-WPSpeedBox.Size = UDim2.new(0.9, 0, 0, 35)
-WPSpeedBox.Position = UDim2.new(0.05, 0, 0.5, 0)
-WPSpeedBox.Text = tostring(Settings.WP_FlySpeed)
-WPSpeedBox.PlaceholderText = "Tốc độ bay (Studs/s)"
-WPSpeedBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-WPSpeedBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-WPSpeedBox.FocusLost:Connect(function()
-    local val = tonumber(WPSpeedBox.Text)
-    if val then Settings.WP_FlySpeed = math.max(5, val) end
-end)
-
-WPModeBtn.MouseButton1Click:Connect(function()
-    if Settings.WP_Mode == "Fly" then
-        Settings.WP_Mode = "Teleport"
-        WPModeBtn.Text = "Chế độ: Dịch Chuyển WP"
-        WPSpeedBox.Visible = false
-    else
-        Settings.WP_Mode = "Fly"
-        WPModeBtn.Text = "Chế độ: Bay Waypoint"
-        WPSpeedBox.Visible = true
-    end
-end)
-
-WPSettingsBtn.MouseButton1Click:Connect(function()
-    WPSettingsFrame.Visible = not WPSettingsFrame.Visible
-end)
 
 local function createWaypointVisual(cframe, index)
     local pole = Instance.new("Part")
@@ -880,8 +766,7 @@ local function createWaypointVisual(cframe, index)
     pole.Anchored = true
     pole.CanCollide = false
     pole.Material = Enum.Material.SmoothPlastic
-    pole.Color = Color3.fromRGB(255, 255, 255)
-    pole.Transparency = 0.2
+    pole.Color = Color3.fromRGB(0, 255, 255)
     pole.Parent = WPFolder
 
     local bb = Instance.new("BillboardGui", pole)
@@ -894,8 +779,6 @@ local function createWaypointVisual(cframe, index)
     txt.BackgroundTransparency = 1
     txt.Text = "WP " .. tostring(index)
     txt.TextColor3 = Color3.fromRGB(0, 255, 255)
-    txt.TextScaled = true
-    txt.Font = Enum.Font.SourceSansBold
 
     return pole
 end
@@ -919,9 +802,7 @@ WPDelBtn.MouseButton1Click:Connect(function()
 end)
 
 WPClearBtn.MouseButton1Click:Connect(function()
-    for _, wp in pairs(WaypointList) do
-        if wp.Part then wp.Part:Destroy() end
-    end
+    for _, wp in pairs(WaypointList) do if wp.Part then wp.Part:Destroy() end end
     WaypointList = {}
 end)
 
@@ -940,36 +821,9 @@ WPRunBtn.MouseButton1Click:Connect(function()
             while Settings.WP_Running do
                 for i, wp in ipairs(WaypointList) do
                     if not Settings.WP_Running or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then break end
-                    
                     hrp = LocalPlayer.Character.HumanoidRootPart
-
-                    if Settings.WP_Mode == "Teleport" then
-                        hrp.CFrame = wp.CFrame
-                        task.wait(0.2)
-                    elseif Settings.WP_Mode == "Fly" then
-                        local distance = (hrp.Position - wp.CFrame.Position).Magnitude
-                        local duration = distance / Settings.WP_FlySpeed
-                        
-                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = wp.CFrame})
-                        
-                        tween:Play()
-                        
-                        local completed = false
-                        local conn
-                        conn = tween.Completed:Connect(function()
-                            completed = true
-                            if conn then conn:Disconnect() end
-                        end)
-
-                        while not completed and Settings.WP_Running do
-                            task.wait(0.05)
-                        end
-                        if not Settings.WP_Running then
-                            tween:Cancel()
-                            break
-                        end
-                    end
+                    hrp.CFrame = wp.CFrame
+                    task.wait(0.3)
                 end
                 task.wait(0.1)
             end
@@ -986,143 +840,11 @@ end)
 
 addSimpleToggle(MiscPage, "Bật Thanh Waypoint Nổi", function(state)
     WPBar.Visible = state
-    if not state then
-        WPSettingsFrame.Visible = false
-        Settings.WP_Running = false
-    end
+    if not state then Settings.WP_Running = false end
 end)
-
------------------- LƯU / TẢI BẢN LƯU WAYPOINT MAP ------------------
-local SaveFrame = Instance.new("Frame", MiscPage)
-SaveFrame.Size = UDim2.new(0.98, 0, 0, 180)
-SaveFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
-local SaveNameBox = Instance.new("TextBox", SaveFrame)
-SaveNameBox.Size = UDim2.new(0.65, 0, 0, 30)
-SaveNameBox.Position = UDim2.new(0.02, 0, 0.05, 0)
-SaveNameBox.PlaceholderText = "Nhập tên bản lưu Waypoint..."
-SaveNameBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-SaveNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local SaveActionBtn = Instance.new("TextButton", SaveFrame)
-SaveActionBtn.Size = UDim2.new(0.28, 0, 0, 30)
-SaveActionBtn.Position = UDim2.new(0.69, 0, 0.05, 0)
-SaveActionBtn.Text = "Lưu Bản Vẽ"
-SaveActionBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-SaveActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local SaveScroll = Instance.new("ScrollingFrame", SaveFrame)
-SaveScroll.Position = UDim2.new(0.02, 0, 0.28, 0)
-SaveScroll.Size = UDim2.new(0.96, 0, 0.68, 0)
-SaveScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-SaveScroll.CanvasSize = UDim2.new(0, 0, 5, 0)
-
-local SaveLayout = Instance.new("UIListLayout", SaveScroll)
-SaveLayout.Padding = UDim.new(0, 5)
-
-local function getFileName()
-    return "MobileHub_WP_" .. tostring(game.PlaceId) .. ".json"
-end
-
-local function loadSavesFromFile()
-    if isfile and isfile(getFileName()) then
-        local content = readfile(getFileName())
-        local success, data = pcall(function() return HttpService:JSONDecode(content) end)
-        if success and data then
-            return data
-        end
-    end
-    return {}
-end
-
-local function saveSavesToFile(data)
-    if writefile then
-        writefile(getFileName(), HttpService:JSONEncode(data))
-    end
-end
-
-local function renderSaveList()
-    for _, item in pairs(SaveScroll:GetChildren()) do
-        if not item:IsA("UIListLayout") then item:Destroy() end
-    end
-
-    local saves = loadSavesFromFile()
-
-    for saveName, cfDataList in pairs(saves) do
-        local item = Instance.new("Frame", SaveScroll)
-        item.Size = UDim2.new(1, -5, 0, 45)
-        item.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-        local img = Instance.new("ImageLabel", item)
-        img.Size = UDim2.new(0, 40, 0, 40)
-        img.Position = UDim2.new(0, 2, 0, 2)
-        pcall(function()
-            img.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-            img.Image = "https://www.roblox.com/asset-thumbnail/image?assetId=" .. game.PlaceId .. "&width=420&height=420&format=png"
-        end)
-
-        local nameLbl = Instance.new("TextLabel", item)
-        nameLbl.Position = UDim2.new(0, 48, 0, 2)
-        nameLbl.Size = UDim2.new(0.45, 0, 0.9, 0)
-        nameLbl.Text = saveName .. "\n(" .. #cfDataList .. " Điểm)"
-        nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-        nameLbl.TextScaled = true
-
-        local loadBtn = Instance.new("TextButton", item)
-        loadBtn.Position = UDim2.new(0.68, 0, 0.15, 0)
-        loadBtn.Size = UDim2.new(0.14, 0, 0.7, 0)
-        loadBtn.Text = "Load"
-        loadBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 50)
-        loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-        loadBtn.MouseButton1Click:Connect(function()
-            for _, wp in pairs(WaypointList) do if wp.Part then wp.Part:Destroy() end end
-            WaypointList = {}
-
-            for i, cfTable in ipairs(cfDataList) do
-                local cf = CFrame.new(unpack(cfTable))
-                local pole = createWaypointVisual(cf, i)
-                table.insert(WaypointList, {CFrame = cf, Part = pole})
-            end
-        end)
-
-        local delBtn = Instance.new("TextButton", item)
-        delBtn.Position = UDim2.new(0.83, 0, 0.15, 0)
-        delBtn.Size = UDim2.new(0.14, 0, 0.7, 0)
-        delBtn.Text = "Xóa"
-        delBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-        delBtn.MouseButton1Click:Connect(function()
-            saves[saveName] = nil
-            saveSavesToFile(saves)
-            renderSaveList()
-        end)
-    end
-end
-
-SaveActionBtn.MouseButton1Click:Connect(function()
-    local text = SaveNameBox.Text
-    if text == "" or #WaypointList == 0 then return end
-
-    local saves = loadSavesFromFile()
-    local cfDataList = {}
-
-    for _, wp in ipairs(WaypointList) do
-        table.insert(cfDataList, {wp.CFrame:GetComponents()})
-    end
-
-    saves[text] = cfDataList
-    saveSavesToFile(saves)
-    SaveNameBox.Text = ""
-    renderSaveList()
-end)
-
-renderSaveList()
 
 ---------------------------------------------------------
--- HỆ THỐNG ESP & GAMEPLAY LOOP FIX
+-- ESP & RENDER LOOP FIX
 ---------------------------------------------------------
 UserInputService.JumpRequest:Connect(function()
     if Settings.InfJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
@@ -1131,17 +853,9 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 local function getHealthColor(percent)
-    if percent >= 0.99 then
-        return Color3.fromRGB(0, 255, 0)
-    elseif percent >= 0.75 then
-        return Color3.fromRGB(153, 255, 0)
-    elseif percent >= 0.50 then
-        return Color3.fromRGB(255, 255, 0)
-    elseif percent >= 0.35 then
-        return Color3.fromRGB(255, 128, 0)
-    else
-        return Color3.fromRGB(255, 0, 0)
-    end
+    if percent >= 0.75 then return Color3.fromRGB(0, 255, 0)
+    elseif percent >= 0.35 then return Color3.fromRGB(255, 255, 0)
+    else return Color3.fromRGB(255, 0, 0) end
 end
 
 local function ensureESP(p)
@@ -1171,7 +885,6 @@ local function ensureESP(p)
         txtName.Size = UDim2.new(1, 0, 0.5, 0)
         txtName.BackgroundTransparency = 1
         txtName.TextScaled = true
-        txtName.Font = Enum.Font.SourceSansBold
 
         local txtHP = Instance.new("TextLabel", bb)
         txtHP.Name = "HPLabel"
@@ -1179,18 +892,15 @@ local function ensureESP(p)
         txtHP.Size = UDim2.new(1, 0, 0.5, 0)
         txtHP.BackgroundTransparency = 1
         txtHP.TextScaled = true
-        txtHP.Font = Enum.Font.SourceSans
     end
 end
 
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- ESP Loop
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             ensureESP(p)
-            
             local char = p.Character
             local hum = char:FindFirstChildOfClass("Humanoid")
             local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -1200,14 +910,11 @@ RunService.RenderStepped:Connect(function()
                 local bb = hrp:FindFirstChild("ESP_Billboard")
                 local isTarget = (p == targetSelectedPlayer and targetESPActive)
 
-                if hl then
-                    hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTarget
-                end
+                if hl then hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTarget end
 
                 if bb then
                     local txtName = bb:FindFirstChild("NameLabel")
                     local txtHP = bb:FindFirstChild("HPLabel")
-                    
                     bb.Enabled = Settings.ESP_Name or Settings.ESP_Full or isTarget
 
                     local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
@@ -1235,11 +942,9 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Movement Mechanic
     local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         local hum = char:FindFirstChildOfClass("Humanoid")
-
         if Settings.WalkSpeedActive then hum.WalkSpeed = Settings.WalkSpeedVal end
         if Settings.JumpPowerActive then
             hum.UseJumpPower = true
@@ -1248,7 +953,6 @@ RunService.RenderStepped:Connect(function()
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
     end
 
-    -- Aimbot Loop
     if Settings.AimbotMode ~= "None" then
         local target = nil
         local shortestDist = math.huge

@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Improved Visibility & Server Hop Options)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Improved Target Search & Server Join)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -153,7 +153,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v2.9"
+Title.Text = "⚡ MOBILE ADVANCED HUB v3.0"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -245,8 +245,79 @@ local PlayerPage   = createTab("PLAYER", 6)
 local MiscPage     = createTab("TỔNG HỢP", 7)
 
 ---------------------------------------------------------
--- UI HELPER FUNCTIONS
+-- UI HELPER FUNCTIONS & CONFIRMATION MODAL
 ---------------------------------------------------------
+-- Modal Xác Nhận Chống Trượt Nhầm (Anti-Missclick Modal)
+local ConfirmModal = Instance.new("Frame", ScreenGui)
+ConfirmModal.Size = UDim2.new(0, 320, 0, 160)
+ConfirmModal.Position = UDim2.new(0.5, -160, 0.5, -80)
+ConfirmModal.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+ConfirmModal.Visible = false
+ConfirmModal.ZIndex = 100
+
+local CMCorner = Instance.new("UICorner", ConfirmModal) CMCorner.CornerRadius = UDim.new(0, 8)
+local CMStroke = Instance.new("UIStroke", ConfirmModal) CMStroke.Color = Color3.fromRGB(0, 170, 255) CMStroke.Thickness = 2
+
+local CMTitle = Instance.new("TextLabel", ConfirmModal)
+CMTitle.Size = UDim2.new(1, 0, 0, 30)
+CMTitle.Text = "XÁC NHẬN CHUYỂN SERVER"
+CMTitle.TextColor3 = Color3.fromRGB(0, 255, 200)
+CMTitle.Font = Enum.Font.GothamBold
+CMTitle.TextSize = 12
+CMTitle.ZIndex = 101
+
+local CMBody = Instance.new("TextLabel", ConfirmModal)
+CMBody.Size = UDim2.new(0.9, 0, 0, 60)
+CMBody.Position = UDim2.new(0.05, 0, 0.25, 0)
+CMBody.Text = "Bạn có chắc chắn muốn tham gia vào Server này?"
+CMBody.TextColor3 = Color3.fromRGB(255, 255, 255)
+CMBody.TextWrapped = true
+CMBody.Font = Enum.Font.Gotham
+CMBody.TextSize = 11
+CMBody.ZIndex = 101
+
+local CMCancelBtn = Instance.new("TextButton", ConfirmModal)
+CMCancelBtn.Size = UDim2.new(0.4, 0, 0, 32)
+CMCancelBtn.Position = UDim2.new(0.08, 0, 0.7, 0)
+CMCancelBtn.Text = "Hủy Bỏ"
+CMCancelBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 60)
+CMCancelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CMCancelBtn.Font = Enum.Font.GothamBold
+CMCancelBtn.TextSize = 11
+CMCancelBtn.ZIndex = 101
+local CMCBCorner = Instance.new("UICorner", CMCancelBtn) CMCBCorner.CornerRadius = UDim.new(0, 6)
+
+local CMConfirmBtn = Instance.new("TextButton", ConfirmModal)
+CMConfirmBtn.Size = UDim2.new(0.4, 0, 0, 32)
+CMConfirmBtn.Position = UDim2.new(0.52, 0, 0.7, 0)
+CMConfirmBtn.Text = "Xác Nhận"
+CMConfirmBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+CMConfirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CMConfirmBtn.Font = Enum.Font.GothamBold
+CMConfirmBtn.TextSize = 11
+CMConfirmBtn.ZIndex = 101
+local CMCFCorner = Instance.new("UICorner", CMConfirmBtn) CMCFCorner.CornerRadius = UDim.new(0, 6)
+
+local currentConfirmCallback = nil
+local function ShowConfirmDialog(message, onConfirm)
+    CMBody.Text = message
+    currentConfirmCallback = onConfirm
+    ConfirmModal.Visible = true
+end
+
+CMCancelBtn.MouseButton1Click:Connect(function()
+    ConfirmModal.Visible = false
+    currentConfirmCallback = nil
+end)
+
+CMConfirmBtn.MouseButton1Click:Connect(function()
+    ConfirmModal.Visible = false
+    if currentConfirmCallback then
+        currentConfirmCallback()
+        currentConfirmCallback = nil
+    end
+end)
+
 local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
     local frame = Instance.new("Frame", page)
     frame.Size = UDim2.new(0.99, 0, 0, 36)
@@ -394,7 +465,6 @@ local function loadServerPlayers()
         local itemCorner = Instance.new("UICorner", item)
         itemCorner.CornerRadius = UDim.new(0, 6)
 
-        -- Avatar người chơi
         local avatarImg = Instance.new("ImageLabel", item)
         avatarImg.Size = UDim2.new(0, 40, 0, 40)
         avatarImg.Position = UDim2.new(0, 4, 0, 4)
@@ -409,7 +479,6 @@ local function loadServerPlayers()
             end)
         end)
 
-        -- Nhãn Tên & Tuổi Tài Khoản (Đã làm rõ nét chữ bằng màu VÀNG VÀ BỎ ĐẬM)
         local nameLbl = Instance.new("TextLabel", item)
         nameLbl.Position = UDim2.new(0, 50, 0, 4)
         nameLbl.Size = UDim2.new(0.48, 0, 1, -8)
@@ -420,7 +489,6 @@ local function loadServerPlayers()
         nameLbl.RichText = true
         nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 
-        -- Nút Copy User
         local cReal = Instance.new("TextButton", item)
         cReal.Position = UDim2.new(0.66, 0, 0.2, 0)
         cReal.Size = UDim2.new(0.16, 0, 0.6, 0)
@@ -434,7 +502,6 @@ local function loadServerPlayers()
         cRealCorner.CornerRadius = UDim.new(0, 4)
         cReal.MouseButton1Click:Connect(function() setclipboard(p.Name) end)
 
-        -- Nút Copy Display
         local cDisplay = Instance.new("TextButton", item)
         cDisplay.Position = UDim2.new(0.83, 0, 0.2, 0)
         cDisplay.Size = UDim2.new(0.16, 0, 0.6, 0)
@@ -453,7 +520,7 @@ loadServerPlayers()
 
 addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
 
------------------- HỆ THỐNG ĐỔI SERVER (SERVER HOPPING) ------------------
+------------------ HỆ THỐNG ĐỔI SERVER (SERVER HOPPING VỚI CONFIRM) ------------------
 local ServerHopFrame = Instance.new("Frame", ServerPage)
 ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
 ServerHopFrame.BackgroundTransparency = 1
@@ -462,7 +529,6 @@ local SHLayout = Instance.new("UIListLayout", ServerHopFrame)
 SHLayout.FillDirection = Enum.FillDirection.Horizontal
 SHLayout.Padding = UDim.new(0.02, 0)
 
--- Nút Vào lại Server Hiện Tại
 local RejoinBtn = Instance.new("TextButton", ServerHopFrame)
 RejoinBtn.Size = UDim2.new(0.32, 0, 1, 0)
 RejoinBtn.Text = "Vào Lại Server"
@@ -474,10 +540,11 @@ local RJC = Instance.new("UICorner", RejoinBtn) RJC.CornerRadius = UDim.new(0, 6
 local RJS = Instance.new("UIStroke", RejoinBtn) RJS.Color = Color3.fromRGB(0, 170, 255)
 
 RejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    ShowConfirmDialog("Bạn có muốn tải lại (Rejoin) Server hiện tại không?", function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end)
 end)
 
--- Nút Chuyển sang Server Khác Ngẫu Nhiên
 local ServerHopBtn = Instance.new("TextButton", ServerHopFrame)
 ServerHopBtn.Size = UDim2.new(0.32, 0, 1, 0)
 ServerHopBtn.Text = "Vào Server Khác"
@@ -511,9 +578,13 @@ local function HopRandomServer()
         end
     end)
 end
-ServerHopBtn.MouseButton1Click:Connect(HopRandomServer)
 
--- Nút Vào Server Ít Người Nhất
+ServerHopBtn.MouseButton1Click:Connect(function()
+    ShowConfirmDialog("Bạn có chắc muốn nhảy sang Server ngẫu nhiên khác?", function()
+        HopRandomServer()
+    end)
+end)
+
 local SmallServerBtn = Instance.new("TextButton", ServerHopFrame)
 SmallServerBtn.Size = UDim2.new(0.32, 0, 1, 0)
 SmallServerBtn.Text = "Vào Server Ít Người"
@@ -548,20 +619,24 @@ local function HopSmallestServer()
         end
     end)
 end
-SmallServerBtn.MouseButton1Click:Connect(HopSmallestServer)
 
------------------- KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI (TRACK & JOIN) ------------------
+SmallServerBtn.MouseButton1Click:Connect(function()
+    ShowConfirmDialog("Chuyển sang Server có ít người nhất?", function()
+        HopSmallestServer()
+    end)
+end)
+
+------------------ KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI NÂNG CẤP (5 NGƯỜI/TRANG, DISPLAYNAME + USERNAME) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
-TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 175)
+TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 280)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
-local TUCorner = Instance.new("UICorner", TargetUserContainer)
-TUCorner.CornerRadius = UDim.new(0, 6)
+local TUCorner = Instance.new("UICorner", TargetUserContainer) TUCorner.CornerRadius = UDim.new(0, 6)
 
 local TUHeader = Instance.new("TextLabel", TargetUserContainer)
 TUHeader.Size = UDim2.new(1, -10, 0, 20)
 TUHeader.Position = UDim2.new(0, 5, 0, 2)
-TUHeader.Text = "👤 TRA CỨU NGƯỜI CHƠI & JOIN SERVER TỰ ĐỘNG"
+TUHeader.Text = "👤 TÌM KIẾM NGƯỜI CHƠI (USERNAME / DISPLAYNAME)"
 TUHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
 TUHeader.TextXAlignment = Enum.TextXAlignment.Left
 TUHeader.Font = Enum.Font.GothamBold
@@ -569,193 +644,213 @@ TUHeader.TextSize = 10
 TUHeader.BackgroundTransparency = 1
 
 local UserInputFrame = Instance.new("Frame", TargetUserContainer)
-UserInputFrame.Size = UDim2.new(0.96, 0, 0, 28)
-UserInputFrame.Position = UDim2.new(0.02, 0, 0.14, 0)
+UserInputFrame.Size = UDim2.new(0.96, 0, 0, 26)
+UserInputFrame.Position = UDim2.new(0.02, 0, 0.08, 0)
 UserInputFrame.BackgroundTransparency = 1
 
 local TargetUserBox = Instance.new("TextBox", UserInputFrame)
 TargetUserBox.Size = UDim2.new(0.75, 0, 1, 0)
-TargetUserBox.PlaceholderText = "Nhập chính xác Username..."
+TargetUserBox.PlaceholderText = "Nhập Username hoặc DisplayName..."
 TargetUserBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
 TargetUserBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetUserBox.Font = Enum.Font.Gotham
 TargetUserBox.TextSize = 10
-
-local TUBCorner = Instance.new("UICorner", TargetUserBox)
-TUBCorner.CornerRadius = UDim.new(0, 4)
+local TUBCorner = Instance.new("UICorner", TargetUserBox) TUBCorner.CornerRadius = UDim.new(0, 4)
 
 local SearchUserBtn = Instance.new("TextButton", UserInputFrame)
 SearchUserBtn.Position = UDim2.new(0.77, 0, 0, 0)
 SearchUserBtn.Size = UDim2.new(0.23, 0, 1, 0)
-SearchUserBtn.Text = "Quét Người"
+SearchUserBtn.Text = "Tìm kiếm"
 SearchUserBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 SearchUserBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchUserBtn.Font = Enum.Font.GothamBold
 SearchUserBtn.TextSize = 10
-
-local SUBStyle = Instance.new("UICorner", SearchUserBtn)
-SUBStyle.CornerRadius = UDim.new(0, 4)
+local SUBStyle = Instance.new("UICorner", SearchUserBtn) SUBStyle.CornerRadius = UDim.new(0, 4)
 
 local UserStatusLabel = Instance.new("TextLabel", TargetUserContainer)
-UserStatusLabel.Position = UDim2.new(0.02, 0, 0.32, 0)
-UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 14)
-UserStatusLabel.Text = "Nhập Username để tải thông tin tài khoản & Server"
+UserStatusLabel.Position = UDim2.new(0.02, 0, 0.18, 0)
+UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 12)
+UserStatusLabel.Text = "Nhập thông tin để tìm kiếm người chơi..."
 UserStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
 UserStatusLabel.Font = Enum.Font.Gotham
 UserStatusLabel.TextSize = 9
 UserStatusLabel.BackgroundTransparency = 1
 
-local UserResultFrame = Instance.new("Frame", TargetUserContainer)
-UserResultFrame.Position = UDim2.new(0.02, 0, 0.43, 0)
-UserResultFrame.Size = UDim2.new(0.96, 0, 0, 92)
-UserResultFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
-UserResultFrame.Visible = false
+-- Khung hiển thị 5 kết quả / trang
+local SearchResultsFrame = Instance.new("Frame", TargetUserContainer)
+SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.23, 0)
+SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 185)
+SearchResultsFrame.BackgroundTransparency = 1
 
-local URFCorner = Instance.new("UICorner", UserResultFrame)
-URFCorner.CornerRadius = UDim.new(0, 6)
+local SRLayout = Instance.new("UIListLayout", SearchResultsFrame)
+SRLayout.Padding = UDim.new(0, 4)
 
-local UserAvatarImg = Instance.new("ImageLabel", UserResultFrame)
-UserAvatarImg.Size = UDim2.new(0, 70, 0, 70)
-UserAvatarImg.Position = UDim2.new(0, 6, 0, 11)
+-- Khung phân trang (Pagination 1..N)
+local PaginationFrame = Instance.new("Frame", TargetUserContainer)
+PaginationFrame.Position = UDim2.new(0.02, 0, 0.90, 0)
+PaginationFrame.Size = UDim2.new(0.96, 0, 0, 22)
+PaginationFrame.BackgroundTransparency = 1
 
-local UAICorner = Instance.new("UICorner", UserAvatarImg)
-UAICorner.CornerRadius = UDim.new(0, 6)
+local PagLayout = Instance.new("UIListLayout", PaginationFrame)
+PagLayout.FillDirection = Enum.FillDirection.Horizontal
+PagLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+PagLayout.Padding = UDim.new(0, 4)
 
-local UserDetailsText = Instance.new("TextLabel", UserResultFrame)
-UserDetailsText.Position = UDim2.new(0, 82, 0, 6)
-UserDetailsText.Size = UDim2.new(0.52, 0, 0.9, 0)
-UserDetailsText.TextColor3 = Color3.fromRGB(255, 255, 255)
-UserDetailsText.Font = Enum.Font.Gotham
-UserDetailsText.TextSize = 9
-UserDetailsText.TextXAlignment = Enum.TextXAlignment.Left
-UserDetailsText.TextYAlignment = Enum.TextYAlignment.Top
+local currentSearchResults = {}
+local currentSearchPage = 1
+local itemsPerPage = 5
 
-local JoinUserServerBtn = Instance.new("TextButton", UserResultFrame)
-JoinUserServerBtn.Position = UDim2.new(0.76, 0, 0.25, 0)
-JoinUserServerBtn.Size = UDim2.new(0.22, 0, 0.5, 0)
-JoinUserServerBtn.Text = "Join Server"
-JoinUserServerBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
-JoinUserServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-JoinUserServerBtn.Font = Enum.Font.GothamBold
-JoinUserServerBtn.TextSize = 10
+local function renderSearchPage(page)
+    currentSearchPage = page
+    for _, child in pairs(SearchResultsFrame:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
+    for _, child in pairs(PaginationFrame:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
 
-local JUSCorner = Instance.new("UICorner", JoinUserServerBtn)
-JUSCorner.CornerRadius = UDim.new(0, 4)
-
-local currentTargetPlaceId = nil
-local currentTargetJobId = nil
-local joinBtnConnection = nil
-
-local function FetchUserFullData()
-    local username = TargetUserBox.Text:match("^%s*(.-)%s*$")
-    if username == "" then
-        UserStatusLabel.Text = "⚠️ Vui lòng nhập Username!"
+    local totalItems = #currentSearchResults
+    if totalItems == 0 then
+        UserStatusLabel.Text = "❌ Không tìm thấy người chơi nào!"
         return
     end
 
-    UserStatusLabel.Text = "⏳ Đang quét thông tin API người chơi..."
-    UserResultFrame.Visible = false
-    currentTargetPlaceId = nil
-    currentTargetJobId = nil
+    local totalPages = math.ceil(totalItems / itemsPerPage)
+    local startIdx = (page - 1) * itemsPerPage + 1
+    local endIdx = math.min(startIdx + itemsPerPage - 1, totalItems)
+
+    UserStatusLabel.Text = string.format("Tìm thấy %d kết quả (Trang %d/%d)", totalItems, page, totalPages)
+
+    for i = startIdx, endIdx do
+        local uData = currentSearchResults[i]
+        
+        local itemFrame = Instance.new("Frame", SearchResultsFrame)
+        itemFrame.Size = UDim2.new(1, 0, 0, 33)
+        itemFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+        local IFC = Instance.new("UICorner", itemFrame) IFC.CornerRadius = UDim.new(0, 4)
+
+        local uInfoLabel = Instance.new("TextLabel", itemFrame)
+        uInfoLabel.Position = UDim2.new(0, 6, 0, 0)
+        uInfoLabel.Size = UDim2.new(0.72, 0, 1, 0)
+        uInfoLabel.Text = string.format("<b>%s</b> (@%s)", uData.displayName, uData.username)
+        uInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        uInfoLabel.RichText = true
+        uInfoLabel.Font = Enum.Font.Gotham
+        uInfoLabel.TextSize = 9
+        uInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+        local actionBtn = Instance.new("TextButton", itemFrame)
+        actionBtn.Position = UDim2.new(0.75, 0, 0.15, 0)
+        actionBtn.Size = UDim2.new(0.23, 0, 0.7, 0)
+        actionBtn.Font = Enum.Font.GothamBold
+        actionBtn.TextSize = 9
+
+        if uData.isIngame then
+            actionBtn.Text = "Rejoin"
+            actionBtn.BackgroundColor3 = Color3.fromRGB(217, 119, 6)
+            actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            actionBtn.Text = "Join"
+            actionBtn.BackgroundColor3 = Color3.fromRGB(2, 132, 199)
+            actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+        local ABC = Instance.new("UICorner", actionBtn) ABC.CornerRadius = UDim.new(0, 4)
+
+        actionBtn.MouseButton1Click:Connect(function()
+            local actionText = uData.isIngame and "REJOIN" or "JOIN"
+            ShowConfirmDialog(string.format("Bạn có chắc chắn muốn %s vào server của %s (@%s)?", actionText, uData.displayName, uData.username), function()
+                UserStatusLabel.Text = "🚀 Đang thực hiện chuyển hướng Server..."
+                if uData.placeId and uData.gameId and uData.gameId ~= "" then
+                    TeleportService:TeleportToPlaceInstance(uData.placeId, uData.gameId, LocalPlayer)
+                elseif uData.placeId then
+                    TeleportService:Teleport(uData.placeId, LocalPlayer)
+                else
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+                end
+            end)
+        end)
+    end
+
+    -- Render các nút số trang 1..N
+    if totalPages > 1 then
+        for p = 1, totalPages do
+            local pBtn = Instance.new("TextButton", PaginationFrame)
+            pBtn.Size = UDim2.new(0, 20, 0, 20)
+            pBtn.Text = tostring(p)
+            pBtn.Font = Enum.Font.GothamBold
+            pBtn.TextSize = 9
+            pBtn.BackgroundColor3 = (p == page) and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(30, 36, 48)
+            pBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            local PBC = Instance.new("UICorner", pBtn) PBC.CornerRadius = UDim.new(0, 3)
+
+            pBtn.MouseButton1Click:Connect(function()
+                renderSearchPage(p)
+            end)
+        end
+    end
+end
+
+local function ExecuteUserSearch()
+    local query = TargetUserBox.Text:match("^%s*(.-)%s*$")
+    if query == "" then
+        UserStatusLabel.Text = "⚠️ Vui lòng nhập Username hoặc DisplayName!"
+        return
+    end
+
+    UserStatusLabel.Text = "⏳ Đang quét dữ liệu Roblox API..."
+    currentSearchResults = {}
 
     task.spawn(function()
-        local userId = nil
-        local success, err = pcall(function()
-            userId = Players:GetUserIdFromNameAsync(username)
-        end)
-
-        if not success or not userId then
-            UserStatusLabel.Text = "❌ Không tìm thấy Username này trên Roblox!"
-            return
-        end
-
-        pcall(function()
-            UserAvatarImg.Image = Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-
-        local accountAgeDays = "Không xác định"
         local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
         
-        pcall(function()
-            local userApiUrl = "https://users.roproxy.com/v1/users/" .. tostring(userId)
-            local res = reqFunc and reqFunc({Url = userApiUrl, Method = "GET"}) or {Body = game:HttpGet(userApiUrl)}
-            local data = HttpService:JSONDecode(res.Body)
-            if data and data.created then
-                local createdStr = data.created:sub(1, 10)
-                local year, month, day = createdStr:match("(%d+)-(%d+)-(%d+)")
-                if year and month and day then
-                    local createdTime = os.time({year = tonumber(year), month = tonumber(month), day = tonumber(day)})
-                    accountAgeDays = math.floor((os.time() - createdTime) / 86400)
-                end
-            end
-        end)
-
-        local statusText = "Offline"
-        local gameTitle = "Không trong Game"
-        
-        pcall(function()
-            local presUrl = "https://presence.roproxy.com/v1/presence/users"
-            local payload = HttpService:JSONEncode({userIds = {userId}})
-            local res
-            if reqFunc then
-                res = reqFunc({
-                    Url = presUrl,
-                    Method = "POST",
-                    Headers = {["Content-Type"] = "application/json"},
-                    Body = payload
+        -- Ưu tiên tìm trong Server hiện tại trước
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Name:lower():find(query:lower(), 1, true) or p.DisplayName:lower():find(query:lower(), 1, true) then
+                table.insert(currentSearchResults, {
+                    userId = p.UserId,
+                    username = p.Name,
+                    displayName = p.DisplayName,
+                    isIngame = true,
+                    placeId = game.PlaceId,
+                    gameId = game.JobId
                 })
             end
+        end
+
+        -- Tìm kiếm qua Roblox API nếu chưa có đủ kết quả
+        pcall(function()
+            local searchUrl = "https://users.roproxy.com/v1/users/search?keyword=" .. HttpService:UrlEncode(query) .. "&limit=10"
+            local res = reqFunc and reqFunc({Url = searchUrl, Method = "GET"}) or {Body = game:HttpGet(searchUrl)}
             if res and res.Body then
-                local pData = HttpService:JSONDecode(res.Body)
-                if pData and pData.userPresences and pData.userPresences[1] then
-                    local presence = pData.userPresences[1]
-                    local pType = presence.userPresenceType
-                    if pType == 1 then
-                        statusText = "🟢 Website Online"
-                    elseif pType == 2 then
-                        statusText = "🎮 Đang Trong Game"
-                        if presence.placeId then
-                            currentTargetPlaceId = presence.placeId
-                            currentTargetJobId = presence.gameId
-                            gameTitle = "Place ID: " .. tostring(presence.placeId)
+                local data = HttpService:JSONDecode(res.Body)
+                if data and data.data then
+                    for _, u in ipairs(data.data) do
+                        local exists = false
+                        for _, existing in ipairs(currentSearchResults) do
+                            if existing.userId == u.id then exists = true break end
                         end
-                    elseif pType == 3 then
-                        statusText = "🔵 Đang ở Studio"
+                        if not exists then
+                            table.insert(currentSearchResults, {
+                                userId = u.id,
+                                username = u.name,
+                                displayName = u.displayName,
+                                isIngame = false,
+                                placeId = nil,
+                                gameId = nil
+                            })
+                        end
                     end
                 end
             end
         end)
 
-        UserResultFrame.Visible = true
-        UserDetailsText.Text = string.format("User: %s\nID: %d\nTuổi Acc: %s ngày\nTrạng thái: %s\nGame: %s", username, userId, tostring(accountAgeDays), statusText, gameTitle)
-        
-        if currentTargetPlaceId then
-            UserStatusLabel.Text = "✅ Đã quét thấy Server! Sẵn sàng Join Game."
-            JoinUserServerBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
-        else
-            UserStatusLabel.Text = "⚠️ Người chơi không trong Game công khai hoặc ẩn trạng thái."
-            JoinUserServerBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
-        end
-
-        if joinBtnConnection then joinBtnConnection:Disconnect() end
-        joinBtnConnection = JoinUserServerBtn.MouseButton1Click:Connect(function()
-            if currentTargetPlaceId then
-                UserStatusLabel.Text = "🚀 Đang chuyển hướng sang Game của người chơi..."
-                if currentTargetJobId and currentTargetJobId ~= "" then
-                    TeleportService:TeleportToPlaceInstance(currentTargetPlaceId, currentTargetJobId, LocalPlayer)
-                else
-                    TeleportService:Teleport(currentTargetPlaceId, LocalPlayer)
-                end
-            else
-                UserStatusLabel.Text = "❌ Không thể Join (Người chơi Offline hoặc không rõ Game)"
-            end
-        end)
+        renderSearchPage(1)
     end)
 end
 
-SearchUserBtn.MouseButton1Click:Connect(FetchUserFullData)
+SearchUserBtn.MouseButton1Click:Connect(ExecuteUserSearch)
 TargetUserBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then FetchUserFullData() end
+    if enterPressed then ExecuteUserSearch() end
 end)
 
 ---------------------------------------------------------
@@ -951,11 +1046,8 @@ ACBar.Active = true
 ACBar.Draggable = true
 ACBar.Visible = false
 
-local ACBarCorner = Instance.new("UICorner", ACBar)
-ACBarCorner.CornerRadius = UDim.new(0, 8)
-
-local ACBarStroke = Instance.new("UIStroke", ACBar)
-ACBarStroke.Color = Color3.fromRGB(0, 255, 200)
+local ACBarCorner = Instance.new("UICorner", ACBar) ACBarCorner.CornerRadius = UDim.new(0, 8)
+local ACBarStroke = Instance.new("UIStroke", ACBar) ACBarStroke.Color = Color3.fromRGB(0, 255, 200)
 
 local ACBarLayout = Instance.new("UIListLayout", ACBar)
 ACBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -969,8 +1061,7 @@ local function makeRoundBtn(parent, text, color)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 14
-    local c = Instance.new("UICorner", btn)
-    c.CornerRadius = UDim.new(0, 6)
+    local c = Instance.new("UICorner", btn) c.CornerRadius = UDim.new(0, 6)
     return btn
 end
 
@@ -988,8 +1079,7 @@ ACSettingsFrame.Visible = false
 ACSettingsFrame.Active = true
 ACSettingsFrame.Draggable = true
 
-local ACSFrameCorner = Instance.new("UICorner", ACSettingsFrame)
-ACSFrameCorner.CornerRadius = UDim.new(0, 8)
+local ACSFrameCorner = Instance.new("UICorner", ACSettingsFrame) ACSFrameCorner.CornerRadius = UDim.new(0, 8)
 
 local ACLoopInfBtn = Instance.new("TextButton", ACSettingsFrame)
 ACLoopInfBtn.Size = UDim2.new(0.9, 0, 0, 28)
@@ -999,8 +1089,7 @@ ACLoopInfBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
 ACLoopInfBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ACLoopInfBtn.Font = Enum.Font.GothamBold
 
-local ACLCorner = Instance.new("UICorner", ACLoopInfBtn)
-ACLCorner.CornerRadius = UDim.new(0, 4)
+local ACLCorner = Instance.new("UICorner", ACLoopInfBtn) ACLCorner.CornerRadius = UDim.new(0, 4)
 
 ACLoopInfBtn.MouseButton1Click:Connect(function()
     Settings.AC_LoopInfinite = not Settings.AC_LoopInfinite
@@ -1017,8 +1106,7 @@ local function makeBox(parent, yPos, text, placeholder)
     box.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
     box.TextColor3 = Color3.fromRGB(0, 255, 200)
     box.Font = Enum.Font.Gotham
-    local c = Instance.new("UICorner", box)
-    c.CornerRadius = UDim.new(0, 4)
+    local c = Instance.new("UICorner", box) c.CornerRadius = UDim.new(0, 4)
     return box
 end
 
@@ -1059,12 +1147,8 @@ local function createAutoClickPoint()
     pFrame.Active = true
     pFrame.Draggable = true
 
-    local stroke = Instance.new("UIStroke", pFrame)
-    stroke.Color = Color3.fromRGB(0, 255, 200)
-    stroke.Thickness = 2
-
-    local corner = Instance.new("UICorner", pFrame)
-    corner.CornerRadius = UDim.new(1, 0)
+    local stroke = Instance.new("UIStroke", pFrame) stroke.Color = Color3.fromRGB(0, 255, 200) stroke.Thickness = 2
+    local corner = Instance.new("UICorner", pFrame) corner.CornerRadius = UDim.new(1, 0)
 
     local lbl = Instance.new("TextLabel", pFrame)
     lbl.Size = UDim2.new(1, 0, 1, 0)
@@ -1088,9 +1172,7 @@ ACDelBtn.MouseButton1Click:Connect(function()
 end)
 
 ACClearBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(AutoClickPoints) do
-        p.Frame:Destroy()
-    end
+    for _, p in pairs(AutoClickPoints) do p.Frame:Destroy() end
     AutoClickPoints = {}
 end)
 
@@ -1152,11 +1234,8 @@ WPBar.Active = true
 WPBar.Draggable = true
 WPBar.Visible = false
 
-local WPBarCorner = Instance.new("UICorner", WPBar)
-WPBarCorner.CornerRadius = UDim.new(0, 8)
-
-local WPBarStroke = Instance.new("UIStroke", WPBar)
-WPBarStroke.Color = Color3.fromRGB(0, 255, 200)
+local WPBarCorner = Instance.new("UICorner", WPBar) WPBarCorner.CornerRadius = UDim.new(0, 8)
+local WPBarStroke = Instance.new("UIStroke", WPBar) WPBarStroke.Color = Color3.fromRGB(0, 255, 200)
 
 local WPBarLayout = Instance.new("UIListLayout", WPBar)
 WPBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -1176,8 +1255,7 @@ WPSettingsFrame.Visible = false
 WPSettingsFrame.Active = true
 WPSettingsFrame.Draggable = true
 
-local WPSCorner = Instance.new("UICorner", WPSettingsFrame)
-WPSCorner.CornerRadius = UDim.new(0, 8)
+local WPSCorner = Instance.new("UICorner", WPSettingsFrame) WPSCorner.CornerRadius = UDim.new(0, 8)
 
 local WPModeBtn = Instance.new("TextButton", WPSettingsFrame)
 WPModeBtn.Size = UDim2.new(0.9, 0, 0, 35)
@@ -1187,8 +1265,7 @@ WPModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 WPModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 WPModeBtn.Font = Enum.Font.GothamBold
 
-local WPMCorner = Instance.new("UICorner", WPModeBtn)
-WPMCorner.CornerRadius = UDim.new(0, 4)
+local WPMCorner = Instance.new("UICorner", WPModeBtn) WPMCorner.CornerRadius = UDim.new(0, 4)
 
 local WPSpeedBox = makeBox(WPSettingsFrame, 0.5, tostring(Settings.WP_FlySpeed), "Tốc độ bay (Studs/s)")
 WPSpeedBox.FocusLost:Connect(function()

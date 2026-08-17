@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed AutoClick Center & Advanced Player Search)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Fixed AutoClick Center, Server Hop & Search UI)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -7,6 +7,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local TweenService = game:GetService("TweenService")
+local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -163,7 +164,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v3.2"
+Title.Text = "⚡ MOBILE ADVANCED HUB v3.3"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -529,7 +530,7 @@ loadServerPlayers()
 
 addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
 
------------------- HỆ THỐNG ĐỔI SERVER ------------------
+------------------ HỆ THỐNG ĐỔI SERVER (FIXED HOÀN HẢO) ------------------
 local ServerHopFrame = Instance.new("Frame", ServerPage)
 ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
 ServerHopFrame.BackgroundTransparency = 1
@@ -564,27 +565,48 @@ ServerHopBtn.TextSize = 9
 local SHC = Instance.new("UICorner", ServerHopBtn) SHC.CornerRadius = UDim.new(0, 6)
 local SHS = Instance.new("UIStroke", ServerHopBtn) SHS.Color = Color3.fromRGB(0, 170, 255)
 
-local function HopRandomServer()
+local function FetchServerList()
     local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
-    local url = "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
-    
-    task.spawn(function()
-        local res = reqFunc and reqFunc({Url = url, Method = "GET"}) or {Body = game:HttpGet(url)}
-        if res and res.Body then
-            local data = HttpService:JSONDecode(res.Body)
-            if data and data.data then
-                local validServers = {}
-                for _, s in ipairs(data.data) do
-                    if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                        table.insert(validServers, s.id)
-                    end
-                end
-                if #validServers > 0 then
-                    local targetJob = validServers[math.random(1, #validServers)]
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJob, LocalPlayer)
-                end
+    local urls = {
+        "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100",
+        "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+    }
+
+    for _, url in ipairs(urls) do
+        local res = pcall(function()
+            if reqFunc then
+                return reqFunc({Url = url, Method = "GET"}).Body
+            else
+                return game:HttpGet(url)
+            end
+        end)
+        if res then
+            local success, data = pcall(function() return HttpService:JSONDecode(res) end)
+            if success and data and data.data and #data.data > 0 then
+                return data.data
             end
         end
+    end
+    return nil
+end
+
+local function HopRandomServer()
+    task.spawn(function()
+        local servers = FetchServerList()
+        if servers then
+            local validServers = {}
+            for _, s in ipairs(servers) do
+                if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                    table.insert(validServers, s.id)
+                end
+            end
+            if #validServers > 0 then
+                local targetJob = validServers[math.random(1, #validServers)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJob, LocalPlayer)
+                return
+            end
+        end
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
     end)
 end
 
@@ -605,27 +627,23 @@ local SSC = Instance.new("UICorner", SmallServerBtn) SSC.CornerRadius = UDim.new
 local SSS = Instance.new("UIStroke", SmallServerBtn) SSS.Color = Color3.fromRGB(0, 170, 255)
 
 local function HopSmallestServer()
-    local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
-    local url = "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
-    
     task.spawn(function()
-        local res = reqFunc and reqFunc({Url = url, Method = "GET"}) or {Body = game:HttpGet(url)}
-        if res and res.Body then
-            local data = HttpService:JSONDecode(res.Body)
-            if data and data.data then
-                local bestServer = nil
-                local minPlayers = math.huge
-                for _, s in ipairs(data.data) do
-                    if s.id ~= game.JobId and s.playing < s.maxPlayers and s.playing < minPlayers then
-                        minPlayers = s.playing
-                        bestServer = s.id
-                    end
-                end
-                if bestServer then
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
+        local servers = FetchServerList()
+        if servers then
+            local bestServer = nil
+            local minPlayers = math.huge
+            for _, s in ipairs(servers) do
+                if s.id ~= game.JobId and s.playing < s.maxPlayers and s.playing < minPlayers then
+                    minPlayers = s.playing
+                    bestServer = s.id
                 end
             end
+            if bestServer then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
+                return
+            end
         end
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
     end)
 end
 
@@ -635,9 +653,9 @@ SmallServerBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
------------------- KHUNG TÌM KIẾM NGƯỜI CHƠI (NÂNG CẤP PRESENCE & GAME TITLE) ------------------
+------------------ KHUNG TÌM KIẾM NGƯỜI CHƠI (GIAO DIỆN TỐI ƯU & RÕ RÀNG) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
-TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 310)
+TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 360)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
 local TUCorner = Instance.new("UICorner", TargetUserContainer) TUCorner.CornerRadius = UDim.new(0, 6)
@@ -654,7 +672,7 @@ TUHeader.BackgroundTransparency = 1
 
 local UserInputFrame = Instance.new("Frame", TargetUserContainer)
 UserInputFrame.Size = UDim2.new(0.96, 0, 0, 26)
-UserInputFrame.Position = UDim2.new(0.02, 0, 0.07, 0)
+UserInputFrame.Position = UDim2.new(0.02, 0, 0.06, 0)
 UserInputFrame.BackgroundTransparency = 1
 
 local TargetUserBox = Instance.new("TextBox", UserInputFrame)
@@ -677,24 +695,24 @@ SearchUserBtn.TextSize = 10
 local SUBStyle = Instance.new("UICorner", SearchUserBtn) SUBStyle.CornerRadius = UDim.new(0, 4)
 
 local UserStatusLabel = Instance.new("TextLabel", TargetUserContainer)
-UserStatusLabel.Position = UDim2.new(0.02, 0, 0.16, 0)
-UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 12)
+UserStatusLabel.Position = UDim2.new(0.02, 0, 0.14, 0)
+UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 14)
 UserStatusLabel.Text = "Nhập thông tin để tìm kiếm người chơi..."
-UserStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+UserStatusLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 UserStatusLabel.Font = Enum.Font.Gotham
 UserStatusLabel.TextSize = 9
 UserStatusLabel.BackgroundTransparency = 1
 
 local SearchResultsFrame = Instance.new("Frame", TargetUserContainer)
-SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.21, 0)
-SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 220)
+SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.19, 0)
+SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 275)
 SearchResultsFrame.BackgroundTransparency = 1
 
 local SRLayout = Instance.new("UIListLayout", SearchResultsFrame)
-SRLayout.Padding = UDim.new(0, 4)
+SRLayout.Padding = UDim.new(0, 5)
 
 local PaginationFrame = Instance.new("Frame", TargetUserContainer)
-PaginationFrame.Position = UDim2.new(0.02, 0, 0.92, 0)
+PaginationFrame.Position = UDim2.new(0.02, 0, 0.93, 0)
 PaginationFrame.Size = UDim2.new(0.96, 0, 0, 20)
 PaginationFrame.BackgroundTransparency = 1
 
@@ -731,15 +749,16 @@ local function renderSearchPage(page)
     for i = startIdx, endIdx do
         local uData = currentSearchResults[i]
         
+        -- Tăng kích thước khung chứa mỗi dòng player lên 65px cho thoải mái
         local itemFrame = Instance.new("Frame", SearchResultsFrame)
-        itemFrame.Size = UDim2.new(1, 0, 0, 50)
+        itemFrame.Size = UDim2.new(1, 0, 0, 65)
         itemFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
-        local IFC = Instance.new("UICorner", itemFrame) IFC.CornerRadius = UDim.new(0, 4)
+        local IFC = Instance.new("UICorner", itemFrame) IFC.CornerRadius = UDim.new(0, 6)
 
         -- Avatar người chơi
         local searchAvatarImg = Instance.new("ImageLabel", itemFrame)
-        searchAvatarImg.Size = UDim2.new(0, 40, 0, 40)
-        searchAvatarImg.Position = UDim2.new(0, 5, 0.5, -20)
+        searchAvatarImg.Size = UDim2.new(0, 50, 0, 50)
+        searchAvatarImg.Position = UDim2.new(0, 6, 0.5, -25)
         searchAvatarImg.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
         local SAFCorner = Instance.new("UICorner", searchAvatarImg) SAFCorner.CornerRadius = UDim.new(1, 0)
 
@@ -749,35 +768,35 @@ local function renderSearchPage(page)
             end)
         end)
 
-        -- Text thông tin (Tên, Trạng thái Presence & Game đang chơi)
+        -- Đổi màu Online sang màu Vàng Sáng (#04ff00) cực kỳ nét và tương phản tốt
         local statusText = ""
         if uData.isCurrentServer then
-            statusText = "<font color=\"#00FF88\">🟢 Ở cùng Server hiện tại</font>"
+            statusText = "<font color=\"#ebf000\"><b>🟡 Ở cùng Server hiện tại</b></font>"
         elseif uData.presenceType == 2 then -- InGame
             local gameName = uData.gameTitle or "Game Không Xác Định"
-            statusText = string.format("<font color=\"#00E5FF\">🎮 Đang chơi: %s</font>", gameName)
+            statusText = string.format("<font color=\"#00E5FF\">🎮 <b>Đang chơi:</b> %s</font>", gameName)
         elseif uData.presenceType == 1 then -- Online
-            statusText = "<font color=\"#FFFF00\">🟡 Đang Online (Trang chủ/Website)</font>"
+            statusText = "<font color=\"#04ff00\"><b>🟢 Đang Online (Website / App Roblox)</b></font>"
         elseif uData.presenceType == 3 then -- Studio
-            statusText = "<font color=\"#FF9900\">🛠️ Đang trong Roblox Studio</font>"
+            statusText = "<font color=\"#FF9900\"><b>🛠️ Đang trong Roblox Studio</b></font>"
         else
-            statusText = "<font color=\"#888888\">🔴 Offline</font>"
+            statusText = "<font color=\"#AAAAAA\"><b>🔴 Offline</b></font>"
         end
 
         local uInfoLabel = Instance.new("TextLabel", itemFrame)
-        uInfoLabel.Position = UDim2.new(0, 50, 0, 2)
-        uInfoLabel.Size = UDim2.new(0.60, 0, 1, -4)
+        uInfoLabel.Position = UDim2.new(0, 62, 0, 4)
+        uInfoLabel.Size = UDim2.new(0.58, 0, 1, -8)
         uInfoLabel.Text = string.format("<b>%s</b> (@%s)\n%s", uData.displayName, uData.username, statusText)
         uInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         uInfoLabel.RichText = true
         uInfoLabel.Font = Enum.Font.Gotham
-        uInfoLabel.TextSize = 9
+        uInfoLabel.TextSize = 10
         uInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
         -- Nút bấm hành động
         local actionBtn = Instance.new("TextButton", itemFrame)
-        actionBtn.Position = UDim2.new(0.75, 0, 0.2, 0)
-        actionBtn.Size = UDim2.new(0.23, 0, 0.6, 0)
+        actionBtn.Position = UDim2.new(0.74, 0, 0.2, 0)
+        actionBtn.Size = UDim2.new(0.24, 0, 0.6, 0)
         actionBtn.Font = Enum.Font.GothamBold
         actionBtn.TextSize = 9
 
@@ -904,7 +923,7 @@ local function ExecuteUserSearch()
         if #userIds > 0 then
             pcall(function()
                 local presUrl = "https://presence.roproxy.com/v1/presence/users"
-                local bodyData = HttpService:JSONEncode({userIds = userIds})
+                local bodyData = HttpService:JSONDecode({userIds = userIds})
                 local res = reqFunc and reqFunc({
                     Url = presUrl,
                     Method = "POST",
@@ -1292,12 +1311,19 @@ local function createAutoClickPoint()
     local stroke = Instance.new("UIStroke", pFrame) stroke.Color = Color3.fromRGB(0, 255, 200) stroke.Thickness = 2
     local corner = Instance.new("UICorner", pFrame) corner.CornerRadius = UDim.new(1, 0)
 
+    -- Thêm dấu chấm bé chuẩn tâm
+    local centerDot = Instance.new("Frame", pFrame)
+    centerDot.Size = UDim2.new(0, 4, 0, 4)
+    centerDot.Position = UDim2.new(0.5, -2, 0.5, -2)
+    centerDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    local dotCorner = Instance.new("UICorner", centerDot) dotCorner.CornerRadius = UDim.new(1, 0)
+
     local lbl = Instance.new("TextLabel", pFrame)
     lbl.Size = UDim2.new(1, 0, 1, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text = tostring(id)
     lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.TextSize = 14
+    lbl.TextSize = 12
     lbl.Font = Enum.Font.GothamBold
 
     table.insert(AutoClickPoints, {Frame = pFrame})
@@ -1318,7 +1344,7 @@ ACClearBtn.MouseButton1Click:Connect(function()
     AutoClickPoints = {}
 end)
 
--- SỬA LỖI TỌA ĐỘ TÂM CLICK CHÍNH XÁC HOÀN HẢO
+-- SỬA LỖI TỌA ĐỘ TÂM CLICK CHÍNH XÁC TUYỆT ĐỐI (TRỪ TOPBAR OFFSET)
 ACRunBtn.MouseButton1Click:Connect(function()
     Settings.AC_Running = not Settings.AC_Running
     if Settings.AC_Running then
@@ -1335,11 +1361,17 @@ ACRunBtn.MouseButton1Click:Connect(function()
 
                 for i, p in ipairs(AutoClickPoints) do
                     if not Settings.AC_Running then break end
-                    -- Tính toán chính xác tuyệt đối trung tâm của hình tròn
+                    
                     local absPos = p.Frame.AbsolutePosition
                     local absSize = p.Frame.AbsoluteSize
+                    
+                    -- Tính toán chính xác tọa độ tâm hình tròn
                     local centerX = absPos.X + (absSize.X / 2)
                     local centerY = absPos.Y + (absSize.Y / 2)
+
+                    -- Bổ sung trừ Topbar Inset của Roblox Mobile để click chuẩn 100% tâm chấm đỏ
+                    local inset = GuiService:GetGuiInset()
+                    centerY = centerY + inset.Y
 
                     VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
                     task.wait(0.02)

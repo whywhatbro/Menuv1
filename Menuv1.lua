@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Engine Render V3)
+-- Roblox Mobile Hub - Fix Tuyệt Đối Cho Mọi Executor Mobile
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -28,22 +28,11 @@ local Settings = {
     FullBrightActive = false,
     ESP_Name = false,
     ESP_Highlight = false,
-    ESP_Full = false,
     
     TargetPlayerName = "",
-    
-    -- Auto Click Settings
-    AC_LoopInfinite = true,
-    AC_LoopCount = 5,
-    AC_CircleSize = 40,
     AC_Delay = 0.1,
-    AC_Running = false,
-
-    -- Waypoint Settings
-    WP_Running = false
+    AC_Running = false
 }
-
-local ServerStartTime = os.time()
 
 -- Anti AFK
 LocalPlayer.Idled:Connect(function()
@@ -60,7 +49,7 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- KHUNG GIAO DIỆN CHÍNH
+-- TẠO KHUNG MENU CHÍNH
 ---------------------------------------------------------
 local function GetSafeParent()
     local success, parent = pcall(function()
@@ -72,110 +61,101 @@ local function GetSafeParent()
 end
 
 local TargetParent = GetSafeParent()
-if TargetParent:FindFirstChild("UltimateMobileHub") then
-    TargetParent.UltimateMobileHub:Destroy()
+if TargetParent:FindFirstChild("UltimateMobileHubFixed") then
+    TargetParent.UltimateMobileHubFixed:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UltimateMobileHub"
+ScreenGui.Name = "UltimateMobileHubFixed"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
 -- Nút Bật/Tắt Menu Chính
-local ToggleMenuBtn = Instance.new("TextButton", ScreenGui)
-ToggleMenuBtn.Size = UDim2.new(0, 90, 0, 35)
-ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
-ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleMenuBtn.Text = "MENU HUB"
-ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
-ToggleMenuBtn.TextSize = 13
-ToggleMenuBtn.Active = true
-ToggleMenuBtn.Draggable = true
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+ToggleBtn.Size = UDim2.new(0, 90, 0, 35)
+ToggleBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.Text = "MENU HUB"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+ToggleBtn.TextSize = 13
+ToggleBtn.Active = true
+ToggleBtn.Draggable = true
 
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 480, 0, 270)
-MainFrame.Position = UDim2.new(0.5, -240, 0.4, -135)
+MainFrame.Size = UDim2.new(0, 460, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -230, 0.4, -130)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
-local MainFrameStroke = Instance.new("UIStroke", MainFrame)
-MainFrameStroke.Color = Color3.fromRGB(0, 170, 255)
-MainFrameStroke.Thickness = 3
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(0, 170, 255)
+MainStroke.Thickness = 2
 
-ToggleMenuBtn.MouseButton1Click:Connect(function()
+ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- Header Bar
+-- Tiêu đề
 local Header = Instance.new("Frame", MainFrame)
 Header.Size = UDim2.new(1, 0, 0, 30)
 Header.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 
 local Title = Instance.new("TextLabel", Header)
-Title.Size = UDim2.new(1, -10, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Text = "MOBILE ADVANCED HUB (FIXED V3)"
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Text = "   MOBILE HUB (HARD-FIXED)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 ---------------------------------------------------------
--- FIX RENDER NỘI DUNG TAB (V3 ENGINE FIX)
+-- CẤU TRÚC TAB KHÔNG DÙNG SCROLLING DỄ LỖI
 ---------------------------------------------------------
-local TabBarScroll = Instance.new("ScrollingFrame", MainFrame)
-TabBarScroll.Position = UDim2.new(0, 0, 0, 30)
-TabBarScroll.Size = UDim2.new(1, 0, 0, 35)
-TabBarScroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TabBarScroll.ScrollBarThickness = 2
-TabBarScroll.ScrollingDirection = Enum.ScrollingDirection.Horizontal
-TabBarScroll.CanvasSize = UDim2.new(0, 600, 0, 0)
+local TabBar = Instance.new("Frame", MainFrame)
+TabBar.Position = UDim2.new(0, 5, 0, 35)
+TabBar.Size = UDim2.new(0, 450, 0, 30)
+TabBar.BackgroundTransparency = 1
 
-local TabLayout = Instance.new("UIListLayout", TabBarScroll)
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Padding = UDim.new(0, 4)
-
-local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Position = UDim2.new(0, 0, 0, 65)
-ContentFrame.Size = UDim2.new(1, 0, 1, -65)
-ContentFrame.BackgroundTransparency = 1
+local ContentArea = Instance.new("Frame", MainFrame)
+ContentArea.Position = UDim2.new(0, 5, 0, 70)
+ContentArea.Size = UDim2.new(0, 450, 0, 185)
+ContentArea.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 
 local Pages = {}
-local TabButtons = {}
+local TabBtns = {}
+local tabNames = {"SERVER", "COMBAT", "MOVE", "ESP", "WORLD", "TỔNG HỢP"}
 
-local function createTab(name, order)
-    local btn = Instance.new("TextButton", TabBarScroll)
-    btn.Size = UDim2.new(0, 80, 1, 0)
+for i, name in ipairs(tabNames) do
+    local btn = Instance.new("TextButton", TabBar)
+    btn.Size = UDim2.new(0, 72, 1, 0)
+    btn.Position = UDim2.new(0, (i - 1) * 75, 0, 0)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    btn.TextSize = 11
-    btn.LayoutOrder = order
+    btn.TextSize = 10
 
-    local page = Instance.new("ScrollingFrame", ContentFrame)
+    local page = Instance.new("ScrollingFrame", ContentArea)
     page.Size = UDim2.new(1, -10, 1, -10)
     page.Position = UDim2.new(0, 5, 0, 5)
     page.BackgroundTransparency = 1
-    page.Visible = (order == 1)
-    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    page.ScrollBarThickness = 5
+    page.Visible = (i == 1)
+    page.CanvasSize = UDim2.new(0, 0, 0, 400) -- Chiều cao cố định đảm bảo cuộn bình thường
+    page.ScrollBarThickness = 4
 
     local layout = Instance.new("UIListLayout", page)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 6)
+    layout.Padding = UDim.new(0, 5)
 
     Pages[name] = page
-    table.insert(TabButtons, btn)
+    table.insert(TabBtns, btn)
 
-    if order == 1 then
+    if i == 1 then
         btn.TextColor3 = Color3.fromRGB(255, 255, 0)
         btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end
 
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do p.Visible = false end
-        for _, b in pairs(TabButtons) do
+        for _, b in pairs(TabBtns) do
             b.TextColor3 = Color3.fromRGB(180, 180, 180)
             b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         end
@@ -183,34 +163,25 @@ local function createTab(name, order)
         btn.TextColor3 = Color3.fromRGB(255, 255, 0)
         btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
-    return page
 end
 
-local ServerPage   = createTab("SERVER", 1)
-local CombatPage   = createTab("COMBAT", 2)
-local MovePage     = createTab("MOVE", 3)
-local VisualPage   = createTab("ESP", 4)
-local WorldPage    = createTab("WORLD", 5)
-local PlayerPage   = createTab("PLAYER", 6)
-local MiscPage     = createTab("TỔNG HỢP", 7)
-
 ---------------------------------------------------------
--- CÁC HÀM TẠO WIDGET NÚT BẤM (CHẮC CHẮN HIỂN THỊ)
+-- TẠO CÁC NÚT BẤM VÀ CÔNG CỤ
 ---------------------------------------------------------
 local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
     local frame = Instance.new("Frame", page)
-    frame.Size = UDim2.new(0.96, 0, 0, 35)
+    frame.Size = UDim2.new(0, 420, 0, 32)
     frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 
     local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0.5, 0, 1, 0)
+    btn.Size = UDim2.new(0, 200, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     btn.Text = name .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
     local txt = Instance.new("TextBox", frame)
-    txt.Position = UDim2.new(0.52, 0, 0, 0)
-    txt.Size = UDim2.new(0.46, 0, 1, 0)
+    txt.Position = UDim2.new(0, 210, 0, 0)
+    txt.Size = UDim2.new(0, 200, 1, 0)
     txt.Text = tostring(defaultVal)
     txt.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     txt.TextColor3 = Color3.fromRGB(0, 255, 255)
@@ -231,7 +202,7 @@ end
 
 local function addSimpleToggle(page, name, onToggle)
     local btn = Instance.new("TextButton", page)
-    btn.Size = UDim2.new(0.96, 0, 0, 32)
+    btn.Size = UDim2.new(0, 420, 0, 30)
     btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     btn.Text = name .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -247,27 +218,11 @@ local function addSimpleToggle(page, name, onToggle)
 end
 
 ---------------------------------------------------------
--- 1. TAB SERVER
+-- NỘI DUNG TỪNG TAB
 ---------------------------------------------------------
-local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
-ServerAgeLabel.Size = UDim2.new(0.96, 0, 0, 25)
-ServerAgeLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-ServerAgeLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-ServerAgeLabel.Text = "Đang tải thời gian Server..."
-
-task.spawn(function()
-    while task.wait(1) do
-        local diff = os.time() - ServerStartTime
-        local d = math.floor(diff / 86400)
-        local h = math.floor((diff % 86400) / 3600)
-        local m = math.floor((diff % 3600) / 60)
-        local s = diff % 60
-        ServerAgeLabel.Text = string.format("Tuổi Server: %dd %dh %dm %ds", d, h, m, s)
-    end
-end)
-
-local RejoinBtn = Instance.new("TextButton", ServerPage)
-RejoinBtn.Size = UDim2.new(0.96, 0, 0, 32)
+-- 1. TAB SERVER
+local RejoinBtn = Instance.new("TextButton", Pages["SERVER"])
+RejoinBtn.Size = UDim2.new(0, 420, 0, 30)
 RejoinBtn.Text = "Rejoin Server"
 RejoinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 RejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -275,8 +230,8 @@ RejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
-local HopBtn = Instance.new("TextButton", ServerPage)
-HopBtn.Size = UDim2.new(0.96, 0, 0, 32)
+local HopBtn = Instance.new("TextButton", Pages["SERVER"])
+HopBtn.Size = UDim2.new(0, 420, 0, 30)
 HopBtn.Text = "Hop Server (Ngẫu nhiên)"
 HopBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 HopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -291,14 +246,11 @@ HopBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
----------------------------------------------------------
 -- 2. TAB COMBAT
----------------------------------------------------------
-addSimpleToggle(CombatPage, "Aim Người Gần Nhất", function(val) Settings.AimbotMode = val and "Closest" or "None" end)
-addSimpleToggle(CombatPage, "Aim Ít Máu Nhất", function(val) Settings.AimbotMode = val and "LowestHealth" or "None" end)
+addSimpleToggle(Pages["COMBAT"], "Aim Gần Nhất", function(val) Settings.AimbotMode = val and "Closest" or "None" end)
 
-local AimFOVToggle = Instance.new("TextButton", CombatPage)
-AimFOVToggle.Size = UDim2.new(0.96, 0, 0, 32)
+local AimFOVToggle = Instance.new("TextButton", Pages["COMBAT"])
+AimFOVToggle.Size = UDim2.new(0, 420, 0, 30)
 AimFOVToggle.Text = "Aim Vòng Tròn (FOV): OFF"
 AimFOVToggle.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 AimFOVToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -316,15 +268,13 @@ AimFOVToggle.MouseButton1Click:Connect(function()
     end
 end)
 
----------------------------------------------------------
--- 3. TAB MOVEMENT & SHIFT LOCK
----------------------------------------------------------
-addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
-addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
-addToggleWithInput(MovePage, "Trọng Lực", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
-addSimpleToggle(MovePage, "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
+-- 3. TAB MOVE
+addToggleWithInput(Pages["MOVE"], "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
+addToggleWithInput(Pages["MOVE"], "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
+addToggleWithInput(Pages["MOVE"], "Trọng Lực", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
+addSimpleToggle(Pages["MOVE"], "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
 
-addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
+addSimpleToggle(Pages["MOVE"], "Bật Script Bay (FlyGui V3)", function(state)
     if state then
         pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
@@ -332,7 +282,7 @@ addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
     end
 end)
 
-addSimpleToggle(MovePage, "Bật Shift Lock Universal", function(state)
+addSimpleToggle(Pages["MOVE"], "Bật Shift Lock Universal", function(state)
     if state then
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Shift-Lock-121871"))()
@@ -340,31 +290,17 @@ addSimpleToggle(MovePage, "Bật Shift Lock Universal", function(state)
     end
 end)
 
----------------------------------------------------------
--- 4. TAB VISUAL (ESP)
----------------------------------------------------------
-addSimpleToggle(VisualPage, "ESP Tên Người Chơi", function(val) Settings.ESP_Name = val end)
-addSimpleToggle(VisualPage, "ESP Viền Sáng (Highlight)", function(val) Settings.ESP_Highlight = val end)
-addSimpleToggle(VisualPage, "Full ESP (Tên + Máu)", function(val) Settings.ESP_Full = val end)
-addSimpleToggle(VisualPage, "Full Bright (Sáng Màn Hình)", function(val)
+-- 4. TAB ESP
+addSimpleToggle(Pages["ESP"], "ESP Viền Sáng (Highlight)", function(val) Settings.ESP_Highlight = val end)
+addSimpleToggle(Pages["ESP"], "Full Bright (Sáng Màn Hình)", function(val)
     Settings.FullBrightActive = val
     Lighting.Ambient = val and Color3.new(1,1,1) or Color3.fromRGB(127,127,127)
     Lighting.GlobalShadows = not val
 end)
 
----------------------------------------------------------
 -- 5. TAB WORLD
----------------------------------------------------------
-addSimpleToggle(WorldPage, "Xóa Sương Mù (Remove Fog)", function(val)
-    if val then
-        Lighting.FogEnd = 9e9
-    else
-        Lighting.FogEnd = 1000
-    end
-end)
-
-local AntiLagBtn = Instance.new("TextButton", WorldPage)
-AntiLagBtn.Size = UDim2.new(0.96, 0, 0, 32)
+local AntiLagBtn = Instance.new("TextButton", Pages["WORLD"])
+AntiLagBtn.Size = UDim2.new(0, 420, 0, 30)
 AntiLagBtn.Text = "Giảm Lag (FPS Boost)"
 AntiLagBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 AntiLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -381,46 +317,9 @@ AntiLagBtn.MouseButton1Click:Connect(function()
     AntiLagBtn.Text = "Đã Xử Lý Giảm Lag!"
 end)
 
----------------------------------------------------------
--- 6. TAB PLAYER
----------------------------------------------------------
-local SearchBox = Instance.new("TextBox", PlayerPage)
-SearchBox.Size = UDim2.new(0.96, 0, 0, 32)
-SearchBox.PlaceholderText = "Nhập tên người chơi..."
-SearchBox.TextColor3 = Color3.fromRGB(255, 255, 0)
-SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-
-local targetSelectedPlayer = nil
-
-SearchBox.FocusLost:Connect(function()
-    local text = SearchBox.Text:lower()
-    targetSelectedPlayer = nil
-    for _, p in pairs(Players:GetPlayers()) do
-        if p.Name:lower():sub(1, #text) == text or p.DisplayName:lower():sub(1, #text) == text then
-            targetSelectedPlayer = p
-            break
-        end
-    end
-end)
-
-local TeleBtn = Instance.new("TextButton", PlayerPage)
-TeleBtn.Size = UDim2.new(0.96, 0, 0, 32)
-TeleBtn.Text = "Teleport Đến Người Chơi"
-TeleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-TeleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleBtn.MouseButton1Click:Connect(function()
-    if targetSelectedPlayer and targetSelectedPlayer.Character and targetSelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = targetSelectedPlayer.Character.HumanoidRootPart.CFrame
-    end
-end)
-
----------------------------------------------------------
--- 7. TAB TỔNG HỢP (AUTO CLICK & WAYPOINT)
----------------------------------------------------------
-local AutoClickPoints = {}
-
+-- 6. TAB TỔNG HỢP (AUTO CLICK)
 local ACBar = Instance.new("Frame", ScreenGui)
-ACBar.Size = UDim2.new(0, 50, 0, 150)
+ACBar.Size = UDim2.new(0, 50, 0, 100)
 ACBar.Position = UDim2.new(0.02, 0, 0.35, 0)
 ACBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ACBar.Active = true
@@ -431,21 +330,22 @@ local ACBarLayout = Instance.new("UIListLayout", ACBar)
 ACBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 ACBarLayout.Padding = UDim.new(0, 5)
 
+local AutoClickPoints = {}
 local ACAddBtn = Instance.new("TextButton", ACBar)
-ACAddBtn.Size = UDim2.new(0, 40, 0, 30)
+ACAddBtn.Size = UDim2.new(0, 40, 0, 40)
 ACAddBtn.Text = "+"
 ACAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 
 local ACRunBtn = Instance.new("TextButton", ACBar)
-ACRunBtn.Size = UDim2.new(0, 40, 0, 30)
+ACRunBtn.Size = UDim2.new(0, 40, 0, 40)
 ACRunBtn.Text = "▶"
 ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
 
 ACAddBtn.MouseButton1Click:Connect(function()
     local id = #AutoClickPoints + 1
     local pFrame = Instance.new("Frame", ScreenGui)
-    pFrame.Size = UDim2.new(0, 40, 0, 40)
-    pFrame.Position = UDim2.new(0.5, -20, 0.5, -20)
+    pFrame.Size = UDim2.new(0, 35, 0, 35)
+    pFrame.Position = UDim2.new(0.5, -17, 0.5, -17)
     pFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     pFrame.BackgroundTransparency = 0.5
     pFrame.Active = true
@@ -481,12 +381,12 @@ ACRunBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-addSimpleToggle(MiscPage, "Bật Thanh Auto Click Nổi", function(state)
+addSimpleToggle(Pages["TỔNG HỢP"], "Bật Thanh Auto Click Nổi", function(state)
     ACBar.Visible = state
 end)
 
 ---------------------------------------------------------
--- ENGINE LOOP (RENDER & ESP)
+-- ENGINE LOOP
 ---------------------------------------------------------
 UserInputService.JumpRequest:Connect(function()
     if Settings.InfJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
@@ -497,7 +397,6 @@ end)
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- Cập nhật WalkSpeed / JumpPower / Gravity
     local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         local hum = char:FindFirstChildOfClass("Humanoid")
@@ -509,7 +408,18 @@ RunService.RenderStepped:Connect(function()
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
     end
 
-    -- Xử lý Aimbot
+    if Settings.ESP_Highlight then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                if not p.Character:FindFirstChild("ESPHl") then
+                    local hl = Instance.new("Highlight", p.Character)
+                    hl.Name = "ESPHl"
+                    hl.FillColor = Color3.fromRGB(0, 255, 0)
+                end
+            end
+        end
+    end
+
     if Settings.AimbotMode ~= "None" then
         local target = nil
         local shortestDist = math.huge

@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom & Redesigned Edition
+-- Roblox Mobile Hub - Ultimate Custom & Game Search Edition
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -66,7 +66,7 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH (NEON UI REDESIGN)
+-- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH
 ---------------------------------------------------------
 local function GetSafeParent()
     local success, parent = pcall(function()
@@ -114,8 +114,8 @@ ToggleStroke.Thickness = 2
 
 -- Khung Main Frame
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 520, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 520, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 18, 24)
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -128,13 +128,13 @@ local MainFrameStroke = Instance.new("UIStroke", MainFrame)
 MainFrameStroke.Color = Color3.fromRGB(0, 170, 255)
 MainFrameStroke.Thickness = 2
 
--- Hiệu ứng Đóng/Mở Menu (Tween Animation)
+-- Hiệu ứng Đóng/Mở Menu
 local menuOpen = true
 ToggleMenuBtn.MouseButton1Click:Connect(function()
     menuOpen = not menuOpen
     if menuOpen then
         MainFrame.Visible = true
-        MainFrame:TweenSize(UDim2.new(0, 520, 0, 300), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        MainFrame:TweenSize(UDim2.new(0, 520, 0, 320), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
     else
         MainFrame:TweenSize(UDim2.new(0, 520, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Quart, 0.3, true, function()
             MainFrame.Visible = false
@@ -153,7 +153,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v2.0"
+Title.Text = "⚡ MOBILE ADVANCED HUB v2.5"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -337,7 +337,7 @@ local function addActionButton(page, name, callback)
 end
 
 ---------------------------------------------------------
--- 1. TAB SERVER
+-- 1. TAB SERVER (BỔ SUNG SEARCH GAME NỔI TIẾNG + LOW SERVER AUTO)
 ---------------------------------------------------------
 local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
 ServerAgeLabel.Size = UDim2.new(0.99, 0, 0, 25)
@@ -361,7 +361,7 @@ task.spawn(function()
 end)
 
 local PlayerListFrame = Instance.new("Frame", ServerPage)
-PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 110)
+PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 90)
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
 local PLCorner = Instance.new("UICorner", PlayerListFrame)
@@ -445,16 +445,180 @@ addActionButton(ServerPage, "Hop Server (Ngẫu nhiên)", function()
         end
     end)
 end)
-addActionButton(ServerPage, "Join Low Server (1-5 Người)", function()
+
+-- Hàm phụ trợ Teleport đến Low Server của bất kỳ PlaceId nào
+local function TeleportToLowestServer(placeId)
     pcall(function()
-        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local list = HttpService:JSONDecode(game:HttpGet(api)).data
-        for _, s in pairs(list) do
-            if s.playing >= 1 and s.playing <= 5 and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                break
+        local api = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local response = game:HttpGet(api)
+        local list = HttpService:JSONDecode(response).data
+        if list then
+            for _, s in pairs(list) do
+                if s.playing >= 1 and s.playing <= 5 then
+                    TeleportService:TeleportToPlaceInstance(placeId, s.id, LocalPlayer)
+                    return
+                end
+            end
+            if #list > 0 then
+                TeleportService:TeleportToPlaceInstance(placeId, list[1].id, LocalPlayer)
             end
         end
+    end)
+end
+
+addActionButton(ServerPage, "Join Low Server Game Hiện Tại (1-5 Người)", function()
+    TeleportToLowestServer(game.PlaceId)
+end)
+
+------------------ KHUNG TÌM KIẾM GAME NỔI TIẾNG ------------------
+local GameSearchContainer = Instance.new("Frame", ServerPage)
+GameSearchContainer.Size = UDim2.new(0.99, 0, 0, 220)
+GameSearchContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
+
+local GSCorner = Instance.new("UICorner", GameSearchContainer)
+GSCorner.CornerRadius = UDim.new(0, 6)
+
+local GSHeader = Instance.new("TextLabel", GameSearchContainer)
+GSHeader.Size = UDim2.new(1, -10, 0, 22)
+GSHeader.Position = UDim2.new(0, 5, 0, 2)
+GSHeader.Text = "🔍 TÌM GAME NỔI TIẾNG (TOP VISITS & PLAYING)"
+GSHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
+GSHeader.TextXAlignment = Enum.TextXAlignment.Left
+GSHeader.Font = Enum.Font.GothamBold
+GSHeader.TextSize = 10
+GSHeader.BackgroundTransparency = 1
+
+local GameSearchBox = Instance.new("TextBox", GameSearchContainer)
+GameSearchBox.Size = UDim2.new(0.96, 0, 0, 28)
+GameSearchBox.Position = UDim2.new(0.02, 0, 0.12, 0)
+GameSearchBox.PlaceholderText = "Nhập tên game (Ví dụ: Blox Fruits, Adopt Me)..."
+GameSearchBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+GameSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+GameSearchBox.Font = Enum.Font.Gotham
+GameSearchBox.TextSize = 11
+
+local GSBCorner = Instance.new("UICorner", GameSearchBox)
+GSBCorner.CornerRadius = UDim.new(0, 4)
+
+local GameScroll = Instance.new("ScrollingFrame", GameSearchContainer)
+GameScroll.Position = UDim2.new(0.02, 0, 0.28, 0)
+GameScroll.Size = UDim2.new(0.96, 0, 0.69, 0)
+GameScroll.BackgroundTransparency = 1
+GameScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+GameScroll.ScrollBarThickness = 2
+
+local GLayout = Instance.new("UIListLayout", GameScroll)
+GLayout.Padding = UDim.new(0, 4)
+
+GLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    GameScroll.CanvasSize = UDim2.new(0, 0, 0, GLayout.AbsoluteContentSize.Y)
+end)
+
+GameSearchBox.FocusLost:Connect(function()
+    local query = GameSearchBox.Text
+    if query == "" then return end
+
+    for _, c in pairs(GameScroll:GetChildren()) do
+        if not c:IsA("UIListLayout") then c:Destroy() end
+    end
+
+    task.spawn(function()
+        pcall(function()
+            local searchUrl = "https://games.roblox.com/v1/games/list?model.keyword=" .. HttpService:UrlEncode(query) .. "&model.maxRows=20"
+            local res = game:HttpGet(searchUrl)
+            local data = HttpService:JSONDecode(res).games
+
+            if data and #data > 0 then
+                -- Sắp xếp theo số lượt truy cập (Visits) giảm dần
+                table.sort(data, function(a, b)
+                    return (a.placeVisits or 0) > (b.placeVisits or 0)
+                end)
+
+                -- Lấy 5 game đầu tiên có lượt chơi cao nhất
+                for i = 1, math.min(5, #data) do
+                    local gameData = data[i]
+                    local item = Instance.new("Frame", GameScroll)
+                    item.Size = UDim2.new(1, -5, 0, 38)
+                    item.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+
+                    local itemCorner = Instance.new("UICorner", item)
+                    itemCorner.CornerRadius = UDim.new(0, 4)
+
+                    local iconImg = Instance.new("ImageLabel", item)
+                    iconImg.Size = UDim2.new(0, 32, 0, 32)
+                    iconImg.Position = UDim2.new(0, 3, 0, 3)
+                    iconImg.BackgroundColor3 = Color3.fromRGB(15, 18, 24)
+
+                    local iconCorner = Instance.new("UICorner", iconImg)
+                    iconCorner.CornerRadius = UDim.new(0, 4)
+
+                    -- Load Icon Thumbnail của Game
+                    task.spawn(function()
+                        pcall(function()
+                            local thumbUrl = "https://thumbnails.roblox.com/v1/places/gameicons?placeIds=" .. gameData.placeId .. "&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false"
+                            local thumbRes = HttpService:JSONDecode(game:HttpGet(thumbUrl)).data
+                            if thumbRes and #thumbRes > 0 then
+                                iconImg.Image = thumbRes[1].imageUrl
+                            end
+                        end)
+                    end)
+
+                    local nameLbl = Instance.new("TextLabel", item)
+                    nameLbl.Position = UDim2.new(0, 40, 0, 2)
+                    nameLbl.Size = UDim2.new(0.42, 0, 0.5, 0)
+                    nameLbl.Text = gameData.name
+                    nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    nameLbl.Font = Enum.Font.GothamBold
+                    nameLbl.TextSize = 10
+                    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                    nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+
+                    local statsLbl = Instance.new("TextLabel", item)
+                    statsLbl.Position = UDim2.new(0, 40, 0, 18)
+                    statsLbl.Size = UDim2.new(0.42, 0, 0.5, 0)
+                    local visitsText = (gameData.placeVisits and gameData.placeVisits > 0) and (math.floor(gameData.placeVisits / 1000000) .. "M Visits") or "Popular"
+                    statsLbl.Text = "👁️ " .. visitsText
+                    statsLbl.TextColor3 = Color3.fromRGB(150, 160, 175)
+                    statsLbl.Font = Enum.Font.Gotham
+                    statsLbl.TextSize = 9
+                    statsLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+                    -- Nút Teleport Thường
+                    local joinBtn = Instance.new("TextButton", item)
+                    joinBtn.Position = UDim2.new(0.70, 0, 0.1, 0)
+                    joinBtn.Size = UDim2.new(0.14, 0, 0.8, 0)
+                    joinBtn.Text = "Vào Game"
+                    joinBtn.Font = Enum.Font.GothamBold
+                    joinBtn.TextSize = 9
+                    joinBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+                    joinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+                    local jCorner = Instance.new("UICorner", joinBtn)
+                    jCorner.CornerRadius = UDim.new(0, 4)
+
+                    joinBtn.MouseButton1Click:Connect(function()
+                        TeleportService:Teleport(gameData.placeId, LocalPlayer)
+                    end)
+
+                    -- Nút Teleport Low Server (Tự động lọc server 1-5 người)
+                    local lowServerBtn = Instance.new("TextButton", item)
+                    lowServerBtn.Position = UDim2.new(0.85, 0, 0.1, 0)
+                    lowServerBtn.Size = UDim2.new(0.14, 0, 0.8, 0)
+                    lowServerBtn.Text = "Low Server"
+                    lowServerBtn.Font = Enum.Font.GothamBold
+                    lowServerBtn.TextSize = 9
+                    lowServerBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+                    lowServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+                    local lsCorner = Instance.new("UICorner", lowServerBtn)
+                    lsCorner.CornerRadius = UDim.new(0, 4)
+
+                    lowServerBtn.MouseButton1Click:Connect(function()
+                        TeleportToLowestServer(gameData.placeId)
+                    end)
+                end
+            end
+        end)
     end)
 end)
 
@@ -490,7 +654,7 @@ FOVInput.FocusLost:Connect(function()
 end)
 
 ---------------------------------------------------------
--- 3. TAB MOVEMENT & SCRIPT SHIFT LOCK BÊN NGOÀI
+-- 3. TAB MOVEMENT & SCRIPT SHIFT LOCK
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
@@ -503,7 +667,6 @@ addActionButton(MovePage, "Bật Script Bay (FlyGui V3)", function()
     end)
 end)
 
--- Thay thế hệ thống Shift Lock cũ bằng việc load script trực tiếp
 addActionButton(MovePage, "🔒 Bật Script Shift Lock (Universal)", function()
     pcall(function()
         loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Shift-Lock-121871"))()
@@ -841,7 +1004,6 @@ addSimpleToggle(MiscPage, "Bật Thanh Auto Click Nổi", function(state)
         Settings.AC_Running = false
     end
 end)
-
 
 ------------------ HỆ THỐNG WAYPOINT CAO CẤP ------------------
 local WaypointList = {}

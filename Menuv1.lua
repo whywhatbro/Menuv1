@@ -104,7 +104,7 @@ ScreenGui.Name = "UltimateMobileHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
--- Nút Bật/Tắt Menu Nổi (Floating Button)
+-- Nút Bật/Tắt Menu Nổi (Giữ nguyên tính năng kéo/kéo di chuyển)
 local ToggleMenuBtn = Instance.new("TextButton", ScreenGui)
 ToggleMenuBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
@@ -123,13 +123,13 @@ local ToggleStroke = Instance.new("UIStroke", ToggleMenuBtn)
 ToggleStroke.Color = Color3.fromRGB(0, 255, 200)
 ToggleStroke.Thickness = 2
 
--- Khung Main Frame
+-- Khung Main Frame (ĐÃ CỐ ĐỊNH - TẮT DRAGGABLE)
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 520, 0, 330)
 MainFrame.Position = UDim2.new(0.5, -260, 0.5, -165)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 18, 24)
 MainFrame.Active = true
-MainFrame.Draggable = true
+MainFrame.Draggable = false
 MainFrame.ClipsDescendants = true
 
 local MainCorner = Instance.new("UICorner", MainFrame)

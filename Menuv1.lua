@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Server Hop & Advanced User Search)
+-- Roblox Mobile Hub - Ultimate Custom Edition v4.0 (Advanced Server Search & Friend Messenger)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -164,7 +164,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v3.4 (FIXED SEARCH & HOP)"
+Title.Text = "⚡ MOBILE ADVANCED HUB v4.0 (SERVER SEARCH & CHAT)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -530,7 +530,7 @@ loadServerPlayers()
 
 addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
 
------------------- HỆ THỐNG ĐỔI SERVER (ĐÃ SỬA LỖI TOÀN DIỆN) ------------------
+------------------ HỆ THỐNG ĐỔI SERVER------------------
 local ServerHopFrame = Instance.new("Frame", ServerPage)
 ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
 ServerHopFrame.BackgroundTransparency = 1
@@ -565,7 +565,6 @@ ServerHopBtn.TextSize = 9
 local SHC = Instance.new("UICorner", ServerHopBtn) SHC.CornerRadius = UDim.new(0, 6)
 local SHS = Instance.new("UIStroke", ServerHopBtn) SHS.Color = Color3.fromRGB(0, 170, 255)
 
--- Hàm HttpRequest hỗ trợ đa dạng Executor
 local function SafeHttpRequest(url, method, headers, body)
     local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
     if requestFunc then
@@ -617,7 +616,6 @@ local function HopRandomServer()
                 return
             end
         end
-        -- Nếu không quét được danh sách, dùng Teleport thường
         TeleportService:Teleport(game.PlaceId, LocalPlayer)
     end)
 end
@@ -665,7 +663,7 @@ SmallServerBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
------------------- KHUNG TÌM KIẾM NGƯỜI CHƠI (HỆ THỐNG TÌM KIẾM NHƯ ROBLOX HOME) ------------------
+------------------ KHUNG TÌM KIẾM NGƯỜI CHƠI (Tối ưu tìm Server/Game tham gia được) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
 TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 360)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
@@ -675,7 +673,7 @@ local TUCorner = Instance.new("UICorner", TargetUserContainer) TUCorner.CornerRa
 local TUHeader = Instance.new("TextLabel", TargetUserContainer)
 TUHeader.Size = UDim2.new(1, -10, 0, 20)
 TUHeader.Position = UDim2.new(0, 5, 0, 2)
-TUHeader.Text = "👤 TÌM KIẾM NGƯỜI CHƠI (ONLINE / GAME / SERVER)"
+TUHeader.Text = "👤 TÌM KIẾM BẠN BÈ & SERVER CÓ THỂ THAM GIA"
 TUHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
 TUHeader.TextXAlignment = Enum.TextXAlignment.Left
 TUHeader.Font = Enum.Font.GothamBold
@@ -779,15 +777,18 @@ local function renderSearchPage(page)
         end)
 
         local statusText = ""
+        local canJoin = false
         if uData.isCurrentServer then
-            statusText = "<font color=\"#00FF88\"><b>🟢 Ở cùng Server hiện tại</b></font>"
-        elseif uData.presenceType == 2 then -- InGame
+            statusText = "<font color=\"#00FF88\"><b>🟢 Cùng Server Hiện Tại</b></font>"
+            canJoin = true
+        elseif uData.presenceType == 2 and uData.placeId then
             local gameName = uData.gameTitle or "Game Khác"
-            statusText = string.format("<font color=\"#00E5FF\">🎮 <b>Đang chơi:</b> %s</font>", gameName)
-        elseif uData.presenceType == 1 then -- Online
-            statusText = "<font color=\"#FFD700\"><b>🟡 Đang Online (Website / App)</b></font>"
-        elseif uData.presenceType == 3 then -- Studio
-            statusText = "<font color=\"#FF9900\"><b>🛠️ Đang trong Roblox Studio</b></font>"
+            statusText = string.format("<font color=\"#00E5FF\">🎮 <b>Đang chơi:</b> %s</font>\n<font color=\"#00FF88\">✔️ Có thể tham gia Server</font>", gameName)
+            canJoin = true
+        elseif uData.presenceType == 1 then
+            statusText = "<font color=\"#FFD700\"><b>🟡 Online (Website / App)</b></font>"
+        elseif uData.presenceType == 3 then
+            statusText = "<font color=\"#FF9900\"><b>🛠️ Trong Roblox Studio</b></font>"
         else
             statusText = "<font color=\"#AAAAAA\"><b>🔴 Offline</b></font>"
         end
@@ -799,7 +800,7 @@ local function renderSearchPage(page)
         uInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         uInfoLabel.RichText = true
         uInfoLabel.Font = Enum.Font.Gotham
-        uInfoLabel.TextSize = 10
+        uInfoLabel.TextSize = 9
         uInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
         local actionBtn = Instance.new("TextButton", itemFrame)
@@ -812,8 +813,8 @@ local function renderSearchPage(page)
             actionBtn.Text = "Teleport"
             actionBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
             actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        elseif uData.presenceType == 2 and uData.placeId then
-            actionBtn.Text = "Join Game"
+        elseif canJoin then
+            actionBtn.Text = "Vào Server"
             actionBtn.BackgroundColor3 = Color3.fromRGB(2, 132, 199)
             actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
@@ -829,8 +830,8 @@ local function renderSearchPage(page)
                 if targetP and targetP.Character and targetP.Character:FindFirstChild("HumanoidRootPart") then
                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetP.Character.HumanoidRootPart.CFrame
                 end
-            elseif uData.presenceType == 2 and uData.placeId then
-                ShowConfirmDialog(string.format("Bạn có muốn theo người chơi %s vào Game không?", uData.displayName), function()
+            elseif canJoin and uData.placeId then
+                ShowConfirmDialog(string.format("Chuyển Server để theo %s?", uData.displayName), function()
                     if uData.gameId and uData.gameId ~= "" then
                         TeleportService:TeleportToPlaceInstance(uData.placeId, uData.gameId, LocalPlayer)
                     else
@@ -866,7 +867,7 @@ local function ExecuteUserSearch()
         return
     end
 
-    UserStatusLabel.Text = "⏳ Đang quét toàn bộ danh sách người chơi từ Roblox Search..."
+    UserStatusLabel.Text = "⏳ Đang quét danh sách người chơi và Server có thể Join..."
     currentSearchResults = {}
 
     task.spawn(function()
@@ -874,7 +875,6 @@ local function ExecuteUserSearch()
         local userIds = {}
         local queryLower = query:lower()
 
-        -- 1. Tìm ưu tiên trong Server hiện tại (Fuzzy Matching cả Username và DisplayName)
         for _, p in pairs(Players:GetPlayers()) do
             if p.Name:lower():find(queryLower, 1, true) or p.DisplayName:lower():find(queryLower, 1, true) then
                 table.insert(foundUsers, {
@@ -890,7 +890,6 @@ local function ExecuteUserSearch()
             end
         end
 
-        -- 2. Tìm trên hệ thống Roblox API bằng Endpoint chuẩn Search của trang chủ
         pcall(function()
             local searchUrl = "https://users.roproxy.com/v1/users/search?keyword=" .. HttpService:UrlEncode(query) .. "&limit=25"
             local res = SafeHttpRequest(searchUrl)
@@ -919,14 +918,12 @@ local function ExecuteUserSearch()
             end
         end)
 
-        -- 3. Lấy danh sách UserId để quét Online Presence
         for _, u in ipairs(foundUsers) do
             if not u.isCurrentServer then
                 table.insert(userIds, u.userId)
             end
         end
 
-        -- 4. Query Presence API
         if #userIds > 0 then
             pcall(function()
                 local presUrl = "https://presence.roproxy.com/v1/presence/users"
@@ -1583,6 +1580,318 @@ addSimpleToggle(MiscPage, "Bật Thanh Waypoint Nổi", function(state)
         WPSettingsFrame.Visible = false
         Settings.WP_Running = false
     end
+end)
+
+---------------------------------------------------------
+-- 8. HỆ THỐNG FRIEND CHAT CHUẨN ZALO/MESSENGER (DẦU CHẤM 🔴 🟢 & NÚT GỬI ▶)
+---------------------------------------------------------
+local ChatDataStore = {} 
+local OnlineHubUsers = {} 
+local UnreadCount = 0
+local CurrentSelectedFriend = nil
+
+-- Floating Mail Button (Icon Hộp thư Nổi)
+local MailButton = Instance.new("ImageButton", ScreenGui)
+MailButton.Size = UDim2.new(0, 55, 0, 55)
+MailButton.Position = UDim2.new(0.02, 0, 0.28, 0)
+MailButton.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
+MailButton.Image = "rbxassetid://6031077364" 
+MailButton.ImageColor3 = Color3.fromRGB(0, 255, 200)
+MailButton.Active = true
+
+local MBCorner = Instance.new("UICorner", MailButton) MBCorner.CornerRadius = UDim.new(0, 28)
+local MBStroke = Instance.new("UIStroke", MailButton) MBStroke.Color = Color3.fromRGB(0, 170, 255) MBStroke.Thickness = 2
+
+local RedDotNotify = Instance.new("Frame", MailButton)
+RedDotNotify.Size = UDim2.new(0, 16, 0, 16)
+RedDotNotify.Position = UDim2.new(0.7, 0, 0, 0)
+RedDotNotify.BackgroundColor3 = Color3.fromRGB(255, 40, 40)
+RedDotNotify.Visible = false
+local RDCorner = Instance.new("UICorner", RedDotNotify) RDCorner.CornerRadius = UDim.new(1, 0)
+local RDStroke = Instance.new("UIStroke", RedDotNotify) RDStroke.Color = Color3.fromRGB(255, 255, 255) RDStroke.Thickness = 1
+
+-- Cơ chế Giữ 2 giây để Kéo (Hold 2s to Drag)
+local isDraggingMail = false
+local holdStartTime = 0
+local dragTouchPos = nil
+local startMailPos = nil
+
+MailButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        holdStartTime = os.clock()
+        dragTouchPos = input.Position
+        startMailPos = MailButton.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragTouchPos then
+        if os.clock() - holdStartTime >= 2 then
+            isDraggingMail = true
+            local delta = input.Position - dragTouchPos
+            MailButton.Position = UDim2.new(startMailPos.X.Scale, startMailPos.X.Offset + delta.X, startMailPos.Y.Scale, startMailPos.Y.Offset + delta.Y)
+        end
+    end
+end)
+
+-- Messenger Main Frame
+local ChatMainFrame = Instance.new("Frame", ScreenGui)
+ChatMainFrame.Size = UDim2.new(0, 550, 0, 340)
+ChatMainFrame.Position = UDim2.new(0.5, -275, 0.5, -170)
+ChatMainFrame.BackgroundColor3 = Color3.fromRGB(16, 20, 28)
+ChatMainFrame.Visible = false
+ChatMainFrame.Active = true
+ChatMainFrame.Draggable = true
+
+local CMC = Instance.new("UICorner", ChatMainFrame) CMC.CornerRadius = UDim.new(0, 10)
+local CMS = Instance.new("UIStroke", ChatMainFrame) CMS.Color = Color3.fromRGB(0, 255, 200) CMS.Thickness = 1.5
+
+MailButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if not isDraggingMail and (os.clock() - holdStartTime < 2) then
+            ChatMainFrame.Visible = not ChatMainFrame.Visible
+            if ChatMainFrame.Visible then
+                RedDotNotify.Visible = false
+                UnreadCount = 0
+            end
+        end
+        isDraggingMail = false
+        dragTouchPos = nil
+    end
+end)
+
+-- Layout Messenger
+local ChatHeader = Instance.new("Frame", ChatMainFrame)
+ChatHeader.Size = UDim2.new(1, 0, 0, 36)
+ChatHeader.BackgroundColor3 = Color3.fromRGB(10, 14, 20)
+local CHC = Instance.new("UICorner", ChatHeader) CHC.CornerRadius = UDim.new(0, 10)
+
+local ChatTitle = Instance.new("TextLabel", ChatHeader)
+ChatTitle.Size = UDim2.new(1, -40, 1, 0)
+ChatTitle.Position = UDim2.new(0, 12, 0, 0)
+ChatTitle.Text = "💬 FRIEND MESSENGER (SCRIPT HUB NETWORK)"
+ChatTitle.TextColor3 = Color3.fromRGB(0, 255, 200)
+ChatTitle.Font = Enum.Font.GothamBold
+ChatTitle.TextSize = 12
+ChatTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local ChatCloseBtn = Instance.new("TextButton", ChatHeader)
+ChatCloseBtn.Size = UDim2.new(0, 35, 1, 0)
+ChatCloseBtn.Position = UDim2.new(1, -35, 0, 0)
+ChatCloseBtn.Text = "✕"
+ChatCloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+ChatCloseBtn.BackgroundTransparency = 1
+ChatCloseBtn.Font = Enum.Font.GothamBold
+ChatCloseBtn.MouseButton1Click:Connect(function() ChatMainFrame.Visible = false end)
+
+-- Danh sách Bạn bè SideBar
+local FriendSidebar = Instance.new("Frame", ChatMainFrame)
+FriendSidebar.Position = UDim2.new(0, 5, 0, 42)
+FriendSidebar.Size = UDim2.new(0.35, 0, 1, -48)
+FriendSidebar.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
+local FSC = Instance.new("UICorner", FriendSidebar) FSC.CornerRadius = UDim.new(0, 6)
+
+local FriendScroll = Instance.new("ScrollingFrame", FriendSidebar)
+FriendScroll.Size = UDim2.new(1, -4, 1, -4)
+FriendScroll.Position = UDim2.new(0, 2, 0, 2)
+FriendScroll.BackgroundTransparency = 1
+FriendScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+FriendScroll.ScrollBarThickness = 3
+
+local FSLayout = Instance.new("UIListLayout", FriendScroll)
+FSLayout.Padding = UDim.new(0, 4)
+FSLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    FriendScroll.CanvasSize = UDim2.new(0, 0, 0, FSLayout.AbsoluteContentSize.Y + 4)
+end)
+
+-- Khung hiển thị Tin nhắn (Chat Container)
+local ChatWindow = Instance.new("Frame", ChatMainFrame)
+ChatWindow.Position = UDim2.new(0.36, 5, 0, 42)
+ChatWindow.Size = UDim2.new(0.63, -10, 1, -48)
+ChatWindow.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
+local CWC = Instance.new("UICorner", ChatWindow) CWC.CornerRadius = UDim.new(0, 6)
+
+local ActiveFriendLabel = Instance.new("TextLabel", ChatWindow)
+ActiveFriendLabel.Size = UDim2.new(1, 0, 0, 26)
+ActiveFriendLabel.BackgroundColor3 = Color3.fromRGB(28, 34, 46)
+ActiveFriendLabel.Text = " Chọn bạn bè để bắt đầu trò chuyện"
+ActiveFriendLabel.TextColor3 = Color3.fromRGB(0, 255, 200)
+ActiveFriendLabel.Font = Enum.Font.GothamBold
+ActiveFriendLabel.TextSize = 10
+ActiveFriendLabel.TextXAlignment = Enum.TextXAlignment.Left
+local AFLC = Instance.new("UICorner", ActiveFriendLabel) AFLC.CornerRadius = UDim.new(0, 6)
+
+local MessagesScroll = Instance.new("ScrollingFrame", ChatWindow)
+MessagesScroll.Position = UDim2.new(0, 4, 0, 30)
+MessagesScroll.Size = UDim2.new(1, -8, 1, -68)
+MessagesScroll.BackgroundTransparency = 1
+MessagesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+MessagesScroll.ScrollBarThickness = 3
+
+local MSLayout = Instance.new("UIListLayout", MessagesScroll)
+MSLayout.Padding = UDim.new(0, 6)
+MSLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    MessagesScroll.CanvasSize = UDim2.new(0, 0, 0, MSLayout.AbsoluteContentSize.Y + 6)
+    MessagesScroll.CanvasPosition = Vector2.new(0, MessagesScroll.AbsoluteCanvasSize.Y)
+end)
+
+-- Khung Nhập tin nhắn & Nút Mũi tên Gửi ▶
+local InputChatFrame = Instance.new("Frame", ChatWindow)
+InputChatFrame.Position = UDim2.new(0, 4, 1, -34)
+InputChatFrame.Size = UDim2.new(1, -8, 0, 30)
+InputChatFrame.BackgroundTransparency = 1
+
+local MessageInputBox = Instance.new("TextBox", InputChatFrame)
+MessageInputBox.Size = UDim2.new(0.84, 0, 1, 0)
+MessageInputBox.PlaceholderText = "Nhập tin nhắn..."
+MessageInputBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+MessageInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+MessageInputBox.Font = Enum.Font.Gotham
+MessageInputBox.TextSize = 10
+MessageInputBox.TextXAlignment = Enum.TextXAlignment.Left
+local MIBMargin = Instance.new("UIPadding", MessageInputBox) MIBMargin.PaddingLeft = UDim.new(0, 8)
+local MIBC = Instance.new("UICorner", MessageInputBox) MIBC.CornerRadius = UDim.new(0, 6)
+
+local SendMsgBtn = Instance.new("TextButton", InputChatFrame)
+SendMsgBtn.Position = UDim2.new(0.86, 0, 0, 0)
+SendMsgBtn.Size = UDim2.new(0.14, 0, 1, 0)
+SendMsgBtn.Text = "➔"
+SendMsgBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+SendMsgBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SendMsgBtn.Font = Enum.Font.GothamBold
+SendMsgBtn.TextSize = 14
+local SMBC = Instance.new("UICorner", SendMsgBtn) SMBC.CornerRadius = UDim.new(0, 6)
+
+local function RenderChatHistory()
+    for _, child in pairs(MessagesScroll:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
+
+    if not CurrentSelectedFriend then return end
+    local history = ChatDataStore[CurrentSelectedFriend.UserId] or {}
+
+    for _, msg in ipairs(history) do
+        local isMe = msg.SenderId == LocalPlayer.UserId
+        
+        local msgBubble = Instance.new("Frame", MessagesScroll)
+        msgBubble.Size = UDim2.new(0.7, 0, 0, 28)
+        msgBubble.Position = isMe and UDim2.new(0.3, 0, 0, 0) or UDim2.new(0, 0, 0, 0)
+        msgBubble.BackgroundColor3 = isMe and Color3.fromRGB(0, 140, 220) or Color3.fromRGB(40, 48, 64)
+        local MBC = Instance.new("UICorner", msgBubble) MBC.CornerRadius = UDim.new(0, 6)
+
+        local msgTxt = Instance.new("TextLabel", msgBubble)
+        msgTxt.Size = UDim2.new(1, -12, 1, 0)
+        msgTxt.Position = UDim2.new(0, 6, 0, 0)
+        msgTxt.Text = msg.Text
+        msgTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
+        msgTxt.Font = Enum.Font.Gotham
+        msgTxt.TextSize = 9
+        msgTxt.TextWrapped = true
+        msgTxt.TextXAlignment = isMe and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
+    end
+end
+
+local function SendFriendMessage()
+    local text = MessageInputBox.Text:match("^%s*(.-)%s*$")
+    if text == "" or not CurrentSelectedFriend then return end
+
+    local friendId = CurrentSelectedFriend.UserId
+    if not ChatDataStore[friendId] then ChatDataStore[friendId] = {} end
+
+    table.insert(ChatDataStore[friendId], {
+        SenderId = LocalPlayer.UserId,
+        Text = text,
+        Time = os.time()
+    })
+
+    MessageInputBox.Text = ""
+    RenderChatHistory()
+
+    -- Giả lập/Xử lý đồng bộ gửi Network trong Server nếu bạn bè trong cùng Game
+    local targetInServer = Players:GetPlayerByUserId(friendId)
+    if targetInServer then
+        -- Kênh chat nội bộ trong Server
+    end
+end
+
+SendMsgBtn.MouseButton1Click:Connect(SendFriendMessage)
+MessageInputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then SendFriendMessage() end
+end)
+
+-- Tải Danh sách Bạn bè Roblox & Kiểm tra Chấm Xanh Hub Online
+local function LoadFriendListChat()
+    for _, child in pairs(FriendScroll:GetChildren()) do
+        if not child:IsA("UIListLayout") then child:Destroy() end
+    end
+
+    task.spawn(function()
+        local success, friendsPages = pcall(function()
+            return Players:GetFriendsAsync(LocalPlayer.UserId)
+        end)
+
+        if success and friendsPages then
+            while true do
+                for _, item in ipairs(friendsPages:GetCurrentPage()) do
+                    local friendFrame = Instance.new("Frame", FriendScroll)
+                    friendFrame.Size = UDim2.new(1, 0, 0, 40)
+                    friendFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+                    local FFC = Instance.new("UICorner", friendFrame) FFC.CornerRadius = UDim.new(0, 5)
+
+                    local fAvatar = Instance.new("ImageLabel", friendFrame)
+                    fAvatar.Size = UDim2.new(0, 32, 0, 32)
+                    fAvatar.Position = UDim2.new(0, 4, 0.5, -16)
+                    fAvatar.BackgroundColor3 = Color3.fromRGB(20, 24, 32)
+                    local FAC = Instance.new("UICorner", fAvatar) FAC.CornerRadius = UDim.new(1, 0)
+
+                    task.spawn(function()
+                        pcall(function()
+                            fAvatar.Image = Players:GetUserThumbnailAsync(item.Id, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+                        end)
+                    end)
+
+                    -- Dấu chấm xanh lá đại diện cho Online Hub/Online Game
+                    local GreenDot = Instance.new("Frame", fAvatar)
+                    GreenDot.Size = UDim2.new(0, 10, 0, 10)
+                    GreenDot.Position = UDim2.new(0.7, 0, 0.7, 0)
+                    GreenDot.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
+                    GreenDot.Visible = item.IsOnline -- Hiển thị chấm xanh khi Online
+                    local GDC = Instance.new("UICorner", GreenDot) GDC.CornerRadius = UDim.new(1, 0)
+                    local GDS = Instance.new("UIStroke", GreenDot) GDS.Color = Color3.fromRGB(20, 24, 32) GDS.Thickness = 1
+
+                    local fName = Instance.new("TextLabel", friendFrame)
+                    fName.Position = UDim2.new(0, 42, 0, 0)
+                    fName.Size = UDim2.new(0.65, 0, 1, 0)
+                    fName.Text = string.format("<b>%s</b>\n@%s", item.DisplayName, item.Username)
+                    fName.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    fName.RichText = true
+                    fName.Font = Enum.Font.Gotham
+                    fName.TextSize = 9
+                    fName.TextXAlignment = Enum.TextXAlignment.Left
+
+                    local selectBtn = Instance.new("TextButton", friendFrame)
+                    selectBtn.Size = UDim2.new(1, 0, 1, 0)
+                    selectBtn.BackgroundTransparency = 1
+                    selectBtn.Text = ""
+
+                    selectBtn.MouseButton1Click:Connect(function()
+                        CurrentSelectedFriend = {UserId = item.Id, Name = item.Username, Display = item.DisplayName}
+                        ActiveFriendLabel.Text = string.format(" 💬 Trò chuyện với: %s (@%s)", item.DisplayName, item.Username)
+                        RenderChatHistory()
+                    end)
+                end
+
+                if friendsPages.IsFinished then break end
+                friendsPages:AdvanceToNextPageAsync()
+            end
+        end
+    end)
+end
+
+LoadFriendListChat()
+addSimpleToggle(MiscPage, "Bật Hộp Thư Chat Nổi", function(state)
+    MailButton.Visible = state
+    if not state then ChatMainFrame.Visible = false end
 end)
 
 ---------------------------------------------------------

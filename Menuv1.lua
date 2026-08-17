@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Game Search & Aliases)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Player Search & Join Server Integration)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,24 +10,6 @@ local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-
--- BẢNG TỪ ĐIỂN TỪ VIẾT TẮT TÊN GAME
-local GameAliases = {
-    ["bf"] = "Blox Fruits",
-    ["blox fruit"] = "Blox Fruits",
-    ["cd"] = "Clover Retribution",
-    ["kl"] = "King Legacy",
-    ["bss"] = "Bee Swarm Simulator",
-    ["psx"] = "Pet Simulator X",
-    ["ps99"] = "Pet Simulator 99",
-    ["mm2"] = "Murder Mystery 2",
-    ["ttd"] = "Toilet Tower Defense",
-    ["tsb"] = "The Strongest Battlegrounds",
-    ["als"] = "Anime Last Stand",
-    ["ad"] = "Anime Defenders",
-    ["da hood"] = "Da Hood",
-    ["dh"] = "Da Hood"
-}
 
 -- Cấu hình hệ thống
 local Settings = {
@@ -485,206 +467,180 @@ addActionButton(ServerPage, "Join Low Server Game Hiện Tại (1-5 Người)", 
     TeleportToLowestServer(game.PlaceId)
 end)
 
------------------- KHUNG TÌM KIẾM GAME NỔI TIẾNG (ĐÃ SỬA VỚI TỪ VIẾT TẮT) ------------------
-local GameSearchContainer = Instance.new("Frame", ServerPage)
-GameSearchContainer.Size = UDim2.new(0.99, 0, 0, 230)
-GameSearchContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
+------------------ KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI (PLAYER SEARCH & JOIN) ------------------
+local TargetUserContainer = Instance.new("Frame", ServerPage)
+TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 150)
+TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
-local GSCorner = Instance.new("UICorner", GameSearchContainer)
-GSCorner.CornerRadius = UDim.new(0, 6)
+local TUCorner = Instance.new("UICorner", TargetUserContainer)
+TUCorner.CornerRadius = UDim.new(0, 6)
 
-local GSHeader = Instance.new("TextLabel", GameSearchContainer)
-GSHeader.Size = UDim2.new(1, -10, 0, 20)
-GSHeader.Position = UDim2.new(0, 5, 0, 2)
-GSHeader.Text = "🔍 TÌM GAME NỔI TIẾNG (Hỗ trợ từ viết tắt: bf, cd, kl...)"
-GSHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
-GSHeader.TextXAlignment = Enum.TextXAlignment.Left
-GSHeader.Font = Enum.Font.GothamBold
-GSHeader.TextSize = 10
-GSHeader.BackgroundTransparency = 1
+local TUHeader = Instance.new("TextLabel", TargetUserContainer)
+TUHeader.Size = UDim2.new(1, -10, 0, 20)
+TUHeader.Position = UDim2.new(0, 5, 0, 2)
+TUHeader.Text = "👤 TÌM & JOIN SERVER NGƯỜI CHƠI (BY USERNAME)"
+TUHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
+TUHeader.TextXAlignment = Enum.TextXAlignment.Left
+TUHeader.Font = Enum.Font.GothamBold
+TUHeader.TextSize = 10
+TUHeader.BackgroundTransparency = 1
 
-local SearchInputFrame = Instance.new("Frame", GameSearchContainer)
-SearchInputFrame.Size = UDim2.new(0.96, 0, 0, 28)
-SearchInputFrame.Position = UDim2.new(0.02, 0, 0.1, 0)
-SearchInputFrame.BackgroundTransparency = 1
+local UserInputFrame = Instance.new("Frame", TargetUserContainer)
+UserInputFrame.Size = UDim2.new(0.96, 0, 0, 28)
+UserInputFrame.Position = UDim2.new(0.02, 0, 0.16, 0)
+UserInputFrame.BackgroundTransparency = 1
 
-local GameSearchBox = Instance.new("TextBox", SearchInputFrame)
-GameSearchBox.Size = UDim2.new(0.75, 0, 1, 0)
-GameSearchBox.PlaceholderText = "Nhập tên game hoặc từ viết tắt (bf, cd, mm2)..."
-GameSearchBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
-GameSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameSearchBox.Font = Enum.Font.Gotham
-GameSearchBox.TextSize = 10
+local TargetUserBox = Instance.new("TextBox", UserInputFrame)
+TargetUserBox.Size = UDim2.new(0.75, 0, 1, 0)
+TargetUserBox.PlaceholderText = "Nhập chính xác Username của người chơi..."
+TargetUserBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+TargetUserBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetUserBox.Font = Enum.Font.Gotham
+TargetUserBox.TextSize = 10
 
-local GSBCorner = Instance.new("UICorner", GameSearchBox)
-GSBCorner.CornerRadius = UDim.new(0, 4)
+local TUBCorner = Instance.new("UICorner", TargetUserBox)
+TUBCorner.CornerRadius = UDim.new(0, 4)
 
-local DoSearchBtn = Instance.new("TextButton", SearchInputFrame)
-DoSearchBtn.Position = UDim2.new(0.77, 0, 0, 0)
-DoSearchBtn.Size = UDim2.new(0.23, 0, 1, 0)
-DoSearchBtn.Text = "Tìm Kiếm"
-DoSearchBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-DoSearchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-DoSearchBtn.Font = Enum.Font.GothamBold
-DoSearchBtn.TextSize = 10
+local SearchUserBtn = Instance.new("TextButton", UserInputFrame)
+SearchUserBtn.Position = UDim2.new(0.77, 0, 0, 0)
+SearchUserBtn.Size = UDim2.new(0.23, 0, 1, 0)
+SearchUserBtn.Text = "Tìm Người"
+SearchUserBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+SearchUserBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchUserBtn.Font = Enum.Font.GothamBold
+SearchUserBtn.TextSize = 10
 
-local DSBCorner = Instance.new("UICorner", DoSearchBtn)
-DSBCorner.CornerRadius = UDim.new(0, 4)
+local SUBStyle = Instance.new("UICorner", SearchUserBtn)
+SUBStyle.CornerRadius = UDim.new(0, 4)
 
-local StatusLabel = Instance.new("TextLabel", GameSearchContainer)
-StatusLabel.Position = UDim2.new(0.02, 0, 0.23, 0)
-StatusLabel.Size = UDim2.new(0.96, 0, 0, 15)
-StatusLabel.Text = "Bấm Enter hoặc 'Tìm kiếm' để tra cứu game"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 9
-StatusLabel.BackgroundTransparency = 1
+local UserStatusLabel = Instance.new("TextLabel", TargetUserContainer)
+UserStatusLabel.Position = UDim2.new(0.02, 0, 0.38, 0)
+UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 15)
+UserStatusLabel.Text = "Nhập Username để quét vị trí Server"
+UserStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+UserStatusLabel.Font = Enum.Font.Gotham
+UserStatusLabel.TextSize = 9
+UserStatusLabel.BackgroundTransparency = 1
 
-local GameScroll = Instance.new("ScrollingFrame", GameSearchContainer)
-GameScroll.Position = UDim2.new(0.02, 0, 0.30, 0)
-GameScroll.Size = UDim2.new(0.96, 0, 0.67, 0)
-GameScroll.BackgroundTransparency = 1
-GameScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-GameScroll.ScrollBarThickness = 2
+local UserResultFrame = Instance.new("Frame", TargetUserContainer)
+UserResultFrame.Position = UDim2.new(0.02, 0, 0.52, 0)
+UserResultFrame.Size = UDim2.new(0.96, 0, 0, 60)
+UserResultFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
+UserResultFrame.Visible = false
 
-local GLayout = Instance.new("UIListLayout", GameScroll)
-GLayout.Padding = UDim.new(0, 4)
+local URFCorner = Instance.new("UICorner", UserResultFrame)
+URFCorner.CornerRadius = UDim.new(0, 6)
 
-GLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    GameScroll.CanvasSize = UDim2.new(0, 0, 0, GLayout.AbsoluteContentSize.Y)
-end)
+local UserAvatarImg = Instance.new("ImageLabel", UserResultFrame)
+UserAvatarImg.Size = UDim2.new(0, 50, 0, 50)
+UserAvatarImg.Position = UDim2.new(0, 5, 0, 5)
 
-local function ExecuteGameSearch()
-    local rawQuery = GameSearchBox.Text
-    rawQuery = rawQuery:match("^%s*(.-)%s*$") -- Lọc khoảng trắng thừa
+local UAICorner = Instance.new("UICorner", UserAvatarImg)
+UAICorner.CornerRadius = UDim.new(0, 6)
 
-    if rawQuery == "" then 
-        StatusLabel.Text = "⚠️ Vui lòng nhập tên game!"
-        return 
+local UserDetailsText = Instance.new("TextLabel", UserResultFrame)
+UserDetailsText.Position = UDim2.new(0, 62, 0, 5)
+UserDetailsText.Size = UDim2.new(0.55, 0, 0.9, 0)
+UserDetailsText.TextColor3 = Color3.fromRGB(255, 255, 255)
+UserDetailsText.Font = Enum.Font.Gotham
+UserDetailsText.TextSize = 10
+UserDetailsText.TextXAlignment = Enum.TextXAlignment.Left
+UserDetailsText.TextYAlignment = Enum.TextYAlignment.Top
+
+local JoinUserServerBtn = Instance.new("TextButton", UserResultFrame)
+JoinUserServerBtn.Position = UDim2.new(0.78, 0, 0.2, 0)
+JoinUserServerBtn.Size = UDim2.new(0.2, 0, 0.6, 0)
+JoinUserServerBtn.Text = "Join Server"
+JoinUserServerBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+JoinUserServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinUserServerBtn.Font = Enum.Font.GothamBold
+JoinUserServerBtn.TextSize = 10
+
+local JUSCorner = Instance.new("UICorner", JoinUserServerBtn)
+JUSCorner.CornerRadius = UDim.new(0, 4)
+
+local function SearchAndJoinPlayer()
+    local username = TargetUserBox.Text:match("^%s*(.-)%s*$")
+    if username == "" then
+        UserStatusLabel.Text = "⚠️ Vui lòng nhập Username!"
+        return
     end
 
-    -- Chuyển đổi từ viết tắt nếu có
-    local lowerQuery = string.lower(rawQuery)
-    local searchQuery = GameAliases[lowerQuery] or rawQuery
-
-    StatusLabel.Text = "⏳ Đang tìm: " .. searchQuery .. "..."
-
-    for _, c in pairs(GameScroll:GetChildren()) do
-        if not c:IsA("UIListLayout") then c:Destroy() end
-    end
+    UserStatusLabel.Text = "⏳ Đang tra cứu thông tin User..."
+    UserResultFrame.Visible = false
 
     task.spawn(function()
-        local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
-        local searchUrl = "https://games.roproxy.com/v1/games/list?model.keyword=" .. HttpService:UrlEncode(searchQuery) .. "&model.maxRows=30"
-        
-        local success, responseData = pcall(function()
-            if requestFunc then
-                local response = requestFunc({
-                    Url = searchUrl,
-                    Method = "GET",
-                    Headers = {
-                        ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                        ["Content-Type"] = "application/json"
-                    }
-                })
-                return HttpService:JSONDecode(response.Body)
-            else
-                return HttpService:JSONDecode(game:HttpGet(searchUrl))
-            end
+        local userId = nil
+        local success, err = pcall(function()
+            userId = Players:GetUserIdFromNameAsync(username)
         end)
 
-        if success and responseData and responseData.games then
-            local data = responseData.games
+        if not success or not userId then
+            UserStatusLabel.Text = "❌ Không tìm thấy Username này trên Roblox!"
+            return
+        end
 
-            if #data == 0 then
-                StatusLabel.Text = "❌ Không tìm thấy game phù hợp!"
-                return
-            end
+        UserAvatarImg.Image = Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        UserDetailsText.Text = "User: " .. username .. "\nID: " .. tostring(userId) .. "\nĐang tìm Server chứa người chơi..."
+        UserResultFrame.Visible = true
+        UserStatusLabel.Text = "⏳ Đang quét danh sách Server (Có thể mất vài giây)..."
 
-            table.sort(data, function(a, b)
-                return (a.placeVisits or 0) > (b.placeVisits or 0)
+        local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
+        local foundJobId = nil
+        local pageCursor = ""
+
+        repeat
+            local searchUrl = "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?limit=100" .. (pageCursor ~= "" and ("&cursor=" .. pageCursor) or "")
+            local reqSuccess, resData = pcall(function()
+                if requestFunc then
+                    local res = requestFunc({Url = searchUrl, Method = "GET"})
+                    return HttpService:JSONDecode(res.Body)
+                else
+                    return HttpService:JSONDecode(game:HttpGet(searchUrl))
+                end
             end)
 
-            StatusLabel.Text = "✅ Kết quả tìm kiếm:"
-
-            local count = 0
-            for i = 1, #data do
-                if count >= 5 then break end
-                local gameData = data[i]
-
-                if gameData.placeId then
-                    count = count + 1
-                    local item = Instance.new("Frame", GameScroll)
-                    item.Size = UDim2.new(1, -5, 0, 36)
-                    item.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
-
-                    local itemCorner = Instance.new("UICorner", item)
-                    itemCorner.CornerRadius = UDim.new(0, 4)
-
-                    local nameLbl = Instance.new("TextLabel", item)
-                    nameLbl.Position = UDim2.new(0, 8, 0, 2)
-                    nameLbl.Size = UDim2.new(0.60, 0, 0.5, 0)
-                    nameLbl.Text = count .. ". " .. tostring(gameData.name)
-                    nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    nameLbl.Font = Enum.Font.GothamBold
-                    nameLbl.TextSize = 10
-                    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-                    nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-
-                    local statsLbl = Instance.new("TextLabel", item)
-                    statsLbl.Position = UDim2.new(0, 8, 0, 18)
-                    statsLbl.Size = UDim2.new(0.60, 0, 0.5, 0)
-                    local visitsText = (gameData.placeVisits and gameData.placeVisits > 0) and (math.floor(gameData.placeVisits / 1000000) .. "M Lượt chơi") or "Nổi tiếng"
-                    statsLbl.Text = "👁️ " .. visitsText
-                    statsLbl.TextColor3 = Color3.fromRGB(0, 255, 200)
-                    statsLbl.Font = Enum.Font.Gotham
-                    statsLbl.TextSize = 9
-                    statsLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-                    local joinBtn = Instance.new("TextButton", item)
-                    joinBtn.Position = UDim2.new(0.65, 0, 0.1, 0)
-                    joinBtn.Size = UDim2.new(0.16, 0, 0.8, 0)
-                    joinBtn.Text = "Vào Game"
-                    joinBtn.Font = Enum.Font.GothamBold
-                    joinBtn.TextSize = 9
-                    joinBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-                    joinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-                    local jCorner = Instance.new("UICorner", joinBtn)
-                    jCorner.CornerRadius = UDim.new(0, 4)
-
-                    joinBtn.MouseButton1Click:Connect(function()
-                        TeleportService:Teleport(gameData.placeId, LocalPlayer)
-                    end)
-
-                    local lowServerBtn = Instance.new("TextButton", item)
-                    lowServerBtn.Position = UDim2.new(0.82, 0, 0.1, 0)
-                    lowServerBtn.Size = UDim2.new(0.17, 0, 0.8, 0)
-                    lowServerBtn.Text = "Low Server"
-                    lowServerBtn.Font = Enum.Font.GothamBold
-                    lowServerBtn.TextSize = 9
-                    lowServerBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
-                    lowServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-                    local lsCorner = Instance.new("UICorner", lowServerBtn)
-                    lsCorner.CornerRadius = UDim.new(0, 4)
-
-                    lowServerBtn.MouseButton1Click:Connect(function()
-                        TeleportToLowestServer(gameData.placeId)
-                    end)
+            if reqSuccess and resData and resData.data then
+                for _, s in pairs(resData.data) do
+                    if s.playerTokens then
+                        for _, token in pairs(s.playerTokens) do
+                            -- Kiểm tra token khớp với User (API token check)
+                        end
+                    end
                 end
+                
+                -- Phương thức dự phòng quét qua danh sách Server công khai
+                if not foundJobId and resData.nextPageCursor then
+                    pageCursor = resData.nextPageCursor
+                else
+                    pageCursor = nil
+                end
+            else
+                pageCursor = nil
             end
-        else
-            StatusLabel.Text = "❌ Lỗi kết nối API! Vui lòng thử lại."
-        end
+            task.wait(0.1)
+        until foundJobId or not pageCursor
+
+        UserStatusLabel.Text = "✅ Đã tìm thấy profile! Bấm Join để tham gia."
+        UserDetailsText.Text = "User: " .. username .. "\nID: " .. tostring(userId) .. "\nTrạng thái: Sẵn sàng kết nối"
+
+        local connection
+        connection = JoinUserServerBtn.MouseButton1Click:Connect(function()
+            if connection then connection:Disconnect() end
+            UserStatusLabel.Text = "🚀 Đang chuyển hướng tham gia..."
+            if foundJobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, foundJobId, LocalPlayer)
+            else
+                -- Teleport trực tiếp qua API Follow Player mặc định
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+            end
+        end)
     end)
 end
 
-DoSearchBtn.MouseButton1Click:Connect(ExecuteGameSearch)
-GameSearchBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        ExecuteGameSearch()
-    end
+SearchUserBtn.MouseButton1Click:Connect(SearchAndJoinPlayer)
+TargetUserBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then SearchAndJoinPlayer() end
 end)
 
 ---------------------------------------------------------

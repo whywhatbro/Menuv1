@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Game Search)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Game Search & Aliases)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,6 +10,24 @@ local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
+-- BẢNG TỪ ĐIỂN TỪ VIẾT TẮT TÊN GAME
+local GameAliases = {
+    ["bf"] = "Blox Fruits",
+    ["blox fruit"] = "Blox Fruits",
+    ["cd"] = "Clover Retribution",
+    ["kl"] = "King Legacy",
+    ["bss"] = "Bee Swarm Simulator",
+    ["psx"] = "Pet Simulator X",
+    ["ps99"] = "Pet Simulator 99",
+    ["mm2"] = "Murder Mystery 2",
+    ["ttd"] = "Toilet Tower Defense",
+    ["tsb"] = "The Strongest Battlegrounds",
+    ["als"] = "Anime Last Stand",
+    ["ad"] = "Anime Defenders",
+    ["da hood"] = "Da Hood",
+    ["dh"] = "Da Hood"
+}
 
 -- Cấu hình hệ thống
 local Settings = {
@@ -436,7 +454,11 @@ local function TeleportToLowestServer(targetPlaceId)
             local url = "https://games.roproxy.com/v1/games/" .. tostring(targetPlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
             
             if requestFunc then
-                local res = requestFunc({Url = url, Method = "GET"})
+                local res = requestFunc({
+                    Url = url, 
+                    Method = "GET",
+                    Headers = { ["User-Agent"] = "Mozilla/5.0", ["Content-Type"] = "application/json" }
+                })
                 return HttpService:JSONDecode(res.Body).data
             else
                 return HttpService:JSONDecode(game:HttpGet(url)).data
@@ -463,7 +485,7 @@ addActionButton(ServerPage, "Join Low Server Game Hiện Tại (1-5 Người)", 
     TeleportToLowestServer(game.PlaceId)
 end)
 
------------------- KHUNG TÌM KIẾM GAME NỔI TIẾNG ------------------
+------------------ KHUNG TÌM KIẾM GAME NỔI TIẾNG (ĐÃ SỬA VỚI TỪ VIẾT TẮT) ------------------
 local GameSearchContainer = Instance.new("Frame", ServerPage)
 GameSearchContainer.Size = UDim2.new(0.99, 0, 0, 230)
 GameSearchContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
@@ -474,7 +496,7 @@ GSCorner.CornerRadius = UDim.new(0, 6)
 local GSHeader = Instance.new("TextLabel", GameSearchContainer)
 GSHeader.Size = UDim2.new(1, -10, 0, 20)
 GSHeader.Position = UDim2.new(0, 5, 0, 2)
-GSHeader.Text = "🔍 TÌM GAME NỔI TIẾNG (Bấm Enter hoặc 'Tìm Kiếm')"
+GSHeader.Text = "🔍 TÌM GAME NỔI TIẾNG (Hỗ trợ từ viết tắt: bf, cd, kl...)"
 GSHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
 GSHeader.TextXAlignment = Enum.TextXAlignment.Left
 GSHeader.Font = Enum.Font.GothamBold
@@ -488,7 +510,7 @@ SearchInputFrame.BackgroundTransparency = 1
 
 local GameSearchBox = Instance.new("TextBox", SearchInputFrame)
 GameSearchBox.Size = UDim2.new(0.75, 0, 1, 0)
-GameSearchBox.PlaceholderText = "Nhập tên game (Blox Fruits, Adopt Me)..."
+GameSearchBox.PlaceholderText = "Nhập tên game hoặc từ viết tắt (bf, cd, mm2)..."
 GameSearchBox.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
 GameSearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 GameSearchBox.Font = Enum.Font.Gotham
@@ -512,7 +534,7 @@ DSBCorner.CornerRadius = UDim.new(0, 4)
 local StatusLabel = Instance.new("TextLabel", GameSearchContainer)
 StatusLabel.Position = UDim2.new(0.02, 0, 0.23, 0)
 StatusLabel.Size = UDim2.new(0.96, 0, 0, 15)
-StatusLabel.Text = ""
+StatusLabel.Text = "Bấm Enter hoặc 'Tìm kiếm' để tra cứu game"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 9
@@ -533,13 +555,19 @@ GLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 end)
 
 local function ExecuteGameSearch()
-    local query = GameSearchBox.Text
-    if query == "" then 
+    local rawQuery = GameSearchBox.Text
+    rawQuery = rawQuery:match("^%s*(.-)%s*$") -- Lọc khoảng trắng thừa
+
+    if rawQuery == "" then 
         StatusLabel.Text = "⚠️ Vui lòng nhập tên game!"
         return 
     end
 
-    StatusLabel.Text = "⏳ Đang tìm kiếm game..."
+    -- Chuyển đổi từ viết tắt nếu có
+    local lowerQuery = string.lower(rawQuery)
+    local searchQuery = GameAliases[lowerQuery] or rawQuery
+
+    StatusLabel.Text = "⏳ Đang tìm: " .. searchQuery .. "..."
 
     for _, c in pairs(GameScroll:GetChildren()) do
         if not c:IsA("UIListLayout") then c:Destroy() end
@@ -547,11 +575,18 @@ local function ExecuteGameSearch()
 
     task.spawn(function()
         local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
-        local searchUrl = "https://games.roproxy.com/v1/games/list?model.keyword=" .. HttpService:UrlEncode(query) .. "&model.maxRows=30"
+        local searchUrl = "https://games.roproxy.com/v1/games/list?model.keyword=" .. HttpService:UrlEncode(searchQuery) .. "&model.maxRows=30"
         
         local success, responseData = pcall(function()
             if requestFunc then
-                local response = requestFunc({Url = searchUrl, Method = "GET"})
+                local response = requestFunc({
+                    Url = searchUrl,
+                    Method = "GET",
+                    Headers = {
+                        ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                        ["Content-Type"] = "application/json"
+                    }
+                })
                 return HttpService:JSONDecode(response.Body)
             else
                 return HttpService:JSONDecode(game:HttpGet(searchUrl))
@@ -562,7 +597,7 @@ local function ExecuteGameSearch()
             local data = responseData.games
 
             if #data == 0 then
-                StatusLabel.Text = "❌ Không tìm thấy game nào trùng tên!"
+                StatusLabel.Text = "❌ Không tìm thấy game phù hợp!"
                 return
             end
 
@@ -570,7 +605,7 @@ local function ExecuteGameSearch()
                 return (a.placeVisits or 0) > (b.placeVisits or 0)
             end)
 
-            StatusLabel.Text = "✅ Đã tìm thấy các game nổi tiếng nhất:"
+            StatusLabel.Text = "✅ Kết quả tìm kiếm:"
 
             local count = 0
             for i = 1, #data do

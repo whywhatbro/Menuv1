@@ -16,6 +16,8 @@ local Camera = workspace.CurrentCamera
 local Settings = {
     AimbotMode = "None",
     FOVRadius = 120,
+    AimWallCheck = true, -- Nếu false: Không aim xuyên tường
+    AimTargetName = "",  -- Nhập tên người chơi muốn Aim
     
     WalkSpeedActive = false,
     WalkSpeedVal = 16,
@@ -104,7 +106,7 @@ ScreenGui.Name = "UltimateMobileHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
--- Nút Bật/Tắt Menu Nổi (Giữ nguyên tính năng kéo/kéo di chuyển)
+-- Nút Bật/Tắt Menu Nổi
 local ToggleMenuBtn = Instance.new("TextButton", ScreenGui)
 ToggleMenuBtn.Size = UDim2.new(0, 60, 0, 60)
 ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
@@ -123,7 +125,7 @@ local ToggleStroke = Instance.new("UIStroke", ToggleMenuBtn)
 ToggleStroke.Color = Color3.fromRGB(0, 255, 200)
 ToggleStroke.Thickness = 2
 
--- Khung Main Frame (ĐÃ CỐ ĐỊNH - TẮT DRAGGABLE)
+-- Khung Main Frame
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 520, 0, 330)
 MainFrame.Position = UDim2.new(0.5, -260, 0.5, -165)
@@ -375,11 +377,12 @@ local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
     end)
 end
 
-local function addSimpleToggle(page, name, onToggle)
+local function addSimpleToggle(page, name, onToggle, defaultState)
     local btn = Instance.new("TextButton", page)
     btn.Size = UDim2.new(0.99, 0, 0, 32)
-    btn.BackgroundColor3 = Color3.fromRGB(180, 50, 60)
-    btn.Text = name .. ": OFF"
+    local active = defaultState or false
+    btn.BackgroundColor3 = active and Color3.fromRGB(40, 160, 90) or Color3.fromRGB(180, 50, 60)
+    btn.Text = name .. (active and ": ON" or ": OFF")
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 11
@@ -387,7 +390,6 @@ local function addSimpleToggle(page, name, onToggle)
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(0, 6)
 
-    local active = false
     btn.MouseButton1Click:Connect(function()
         active = not active
         btn.BackgroundColor3 = active and Color3.fromRGB(40, 160, 90) or Color3.fromRGB(180, 50, 60)
@@ -418,7 +420,7 @@ local function addActionButton(page, name, callback)
 end
 
 ---------------------------------------------------------
--- 1. TAB SERVER & DANH SÁCH NGƯỜI CHƠI TRONG SERVER
+-- 1. TAB SERVER
 ---------------------------------------------------------
 local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
 ServerAgeLabel.Size = UDim2.new(0.99, 0, 0, 25)
@@ -530,7 +532,7 @@ loadServerPlayers()
 
 addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
 
------------------- HỆ THỐNG ĐỔI SERVER------------------
+------------------ HỆ THỐNG ĐỔI SERVER ------------------
 local ServerHopFrame = Instance.new("Frame", ServerPage)
 ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
 ServerHopFrame.BackgroundTransparency = 1
@@ -663,7 +665,7 @@ SmallServerBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
------------------- KHUNG TÌM KIẾM NGƯỜI CHƠI (Tối ưu tìm Server/Game tham gia được) ------------------
+------------------ KHUNG TÌM KIẾM NGƯỜI CHƠI ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
 TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 360)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
@@ -971,7 +973,7 @@ TargetUserBox.FocusLost:Connect(function(enterPressed)
 end)
 
 ---------------------------------------------------------
--- 2. TAB COMBAT
+-- 2. TAB COMBAT (ĐÃ BỔ SUNG TÍNH NĂNG TÌM THEO TÊN & WALLCHECK)
 ---------------------------------------------------------
 addSimpleToggle(CombatPage, "Aim Người Gần Nhất", function(val) Settings.AimbotMode = val and "Closest" or "None" end)
 addSimpleToggle(CombatPage, "Aim Ít Máu Nhất", function(val) Settings.AimbotMode = val and "LowestHealth" or "None" end)
@@ -1001,6 +1003,33 @@ FOVInput.FocusLost:Connect(function()
     end
 end)
 
+-- Nút Bật/Tắt Aim Xuyên Tường
+addSimpleToggle(CombatPage, "Aim Xuyên Tường (Wall Check)", function(val)
+    Settings.AimWallCheck = val
+end, true)
+
+-- Nút Bật/Tắt Aim Theo Tên Người Chơi
+addSimpleToggle(CombatPage, "Aim Theo Tên (Target Name)", function(val)
+    Settings.AimbotMode = val and "TargetName" or "None"
+end)
+
+-- Ô nhập tên Target
+local AimTargetInput = Instance.new("TextBox", CombatPage)
+AimTargetInput.Size = UDim2.new(0.99, 0, 0, 32)
+AimTargetInput.Text = Settings.AimTargetName
+AimTargetInput.PlaceholderText = "Nhập Username/Display Name cần Aim..."
+AimTargetInput.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
+AimTargetInput.TextColor3 = Color3.fromRGB(0, 255, 200)
+AimTargetInput.Font = Enum.Font.Gotham
+AimTargetInput.TextSize = 11
+
+local AimTargetCorner = Instance.new("UICorner", AimTargetInput)
+AimTargetCorner.CornerRadius = UDim.new(0, 6)
+
+AimTargetInput.FocusLost:Connect(function()
+    Settings.AimTargetName = AimTargetInput.Text:lower()
+end)
+
 ---------------------------------------------------------
 -- 3. TAB MOVEMENT & SCRIPT SHIFT LOCK
 ---------------------------------------------------------
@@ -1022,7 +1051,7 @@ addActionButton(MovePage, "🔒 Bật Script Shift Lock (Universal)", function()
 end)
 
 ---------------------------------------------------------
--- 4. TAB VISUAL (FULLBRIGHT, X-RAY & NOCLIP CAMERA)
+-- 4. TAB VISUAL
 ---------------------------------------------------------
 addSimpleToggle(VisualPage, "ESP Tên", function(val) Settings.ESP_Name = val end)
 addSimpleToggle(VisualPage, "ESP Viền Sáng", function(val) Settings.ESP_Highlight = val end)
@@ -1583,14 +1612,12 @@ addSimpleToggle(MiscPage, "Bật Thanh Waypoint Nổi", function(state)
 end)
 
 ---------------------------------------------------------
--- 8. HỆ THỐNG FRIEND CHAT CHUẨN ZALO/MESSENGER (DẦU CHẤM 🔴 🟢 & NÚT GỬI ▶)
+-- 8. HỆ THỐNG FRIEND CHAT (ĐÃ SỬA: KHÔNG TỰ HIỆN KHI VÀO GAME)
 ---------------------------------------------------------
 local ChatDataStore = {} 
-local OnlineHubUsers = {} 
-local UnreadCount = 0
 local CurrentSelectedFriend = nil
 
--- Floating Mail Button (Icon Hộp thư Nổi)
+-- Floating Mail Button (Ẩn mặc định)
 local MailButton = Instance.new("ImageButton", ScreenGui)
 MailButton.Size = UDim2.new(0, 55, 0, 55)
 MailButton.Position = UDim2.new(0.02, 0, 0.28, 0)
@@ -1598,6 +1625,7 @@ MailButton.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
 MailButton.Image = "rbxassetid://6031077364" 
 MailButton.ImageColor3 = Color3.fromRGB(0, 255, 200)
 MailButton.Active = true
+MailButton.Visible = false -- Tắt tự động hiển thị khi vào game
 
 local MBCorner = Instance.new("UICorner", MailButton) MBCorner.CornerRadius = UDim.new(0, 28)
 local MBStroke = Instance.new("UIStroke", MailButton) MBStroke.Color = Color3.fromRGB(0, 170, 255) MBStroke.Thickness = 2
@@ -1610,7 +1638,7 @@ RedDotNotify.Visible = false
 local RDCorner = Instance.new("UICorner", RedDotNotify) RDCorner.CornerRadius = UDim.new(1, 0)
 local RDStroke = Instance.new("UIStroke", RedDotNotify) RDStroke.Color = Color3.fromRGB(255, 255, 255) RDStroke.Thickness = 1
 
--- Cơ chế Giữ 2 giây để Kéo (Hold 2s to Drag)
+-- Cơ chế Hold 2s to Drag
 local isDraggingMail = false
 local holdStartTime = 0
 local dragTouchPos = nil
@@ -1634,12 +1662,12 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Messenger Main Frame
+-- Messenger Main Frame (Ẩn mặc định)
 local ChatMainFrame = Instance.new("Frame", ScreenGui)
 ChatMainFrame.Size = UDim2.new(0, 550, 0, 340)
 ChatMainFrame.Position = UDim2.new(0.5, -275, 0.5, -170)
 ChatMainFrame.BackgroundColor3 = Color3.fromRGB(16, 20, 28)
-ChatMainFrame.Visible = false
+ChatMainFrame.Visible = false -- Tắt tự động hiển thị khi vào game
 ChatMainFrame.Active = true
 ChatMainFrame.Draggable = true
 
@@ -1652,7 +1680,6 @@ MailButton.InputEnded:Connect(function(input)
             ChatMainFrame.Visible = not ChatMainFrame.Visible
             if ChatMainFrame.Visible then
                 RedDotNotify.Visible = false
-                UnreadCount = 0
             end
         end
         isDraggingMail = false
@@ -1684,7 +1711,7 @@ ChatCloseBtn.BackgroundTransparency = 1
 ChatCloseBtn.Font = Enum.Font.GothamBold
 ChatCloseBtn.MouseButton1Click:Connect(function() ChatMainFrame.Visible = false end)
 
--- Danh sách Bạn bè SideBar
+-- SideBar
 local FriendSidebar = Instance.new("Frame", ChatMainFrame)
 FriendSidebar.Position = UDim2.new(0, 5, 0, 42)
 FriendSidebar.Size = UDim2.new(0.35, 0, 1, -48)
@@ -1704,7 +1731,7 @@ FSLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     FriendScroll.CanvasSize = UDim2.new(0, 0, 0, FSLayout.AbsoluteContentSize.Y + 4)
 end)
 
--- Khung hiển thị Tin nhắn (Chat Container)
+-- Container
 local ChatWindow = Instance.new("Frame", ChatMainFrame)
 ChatWindow.Position = UDim2.new(0.36, 5, 0, 42)
 ChatWindow.Size = UDim2.new(0.63, -10, 1, -48)
@@ -1735,7 +1762,7 @@ MSLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     MessagesScroll.CanvasPosition = Vector2.new(0, MessagesScroll.AbsoluteCanvasSize.Y)
 end)
 
--- Khung Nhập tin nhắn & Nút Mũi tên Gửi ▶
+-- Input Chat
 local InputChatFrame = Instance.new("Frame", ChatWindow)
 InputChatFrame.Position = UDim2.new(0, 4, 1, -34)
 InputChatFrame.Size = UDim2.new(1, -8, 0, 30)
@@ -1806,12 +1833,6 @@ local function SendFriendMessage()
 
     MessageInputBox.Text = ""
     RenderChatHistory()
-
-    -- Giả lập/Xử lý đồng bộ gửi Network trong Server nếu bạn bè trong cùng Game
-    local targetInServer = Players:GetPlayerByUserId(friendId)
-    if targetInServer then
-        -- Kênh chat nội bộ trong Server
-    end
 end
 
 SendMsgBtn.MouseButton1Click:Connect(SendFriendMessage)
@@ -1819,7 +1840,6 @@ MessageInputBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then SendFriendMessage() end
 end)
 
--- Tải Danh sách Bạn bè Roblox & Kiểm tra Chấm Xanh Hub Online
 local function LoadFriendListChat()
     for _, child in pairs(FriendScroll:GetChildren()) do
         if not child:IsA("UIListLayout") then child:Destroy() end
@@ -1850,12 +1870,11 @@ local function LoadFriendListChat()
                         end)
                     end)
 
-                    -- Dấu chấm xanh lá đại diện cho Online Hub/Online Game
                     local GreenDot = Instance.new("Frame", fAvatar)
                     GreenDot.Size = UDim2.new(0, 10, 0, 10)
                     GreenDot.Position = UDim2.new(0.7, 0, 0.7, 0)
                     GreenDot.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
-                    GreenDot.Visible = item.IsOnline -- Hiển thị chấm xanh khi Online
+                    GreenDot.Visible = item.IsOnline
                     local GDC = Instance.new("UICorner", GreenDot) GDC.CornerRadius = UDim.new(1, 0)
                     local GDS = Instance.new("UIStroke", GreenDot) GDS.Color = Color3.fromRGB(20, 24, 32) GDS.Thickness = 1
 
@@ -1889,6 +1908,8 @@ local function LoadFriendListChat()
 end
 
 LoadFriendListChat()
+
+-- Công tắc Bật/Tắt Hộp Thư Chat Nổi
 addSimpleToggle(MiscPage, "Bật Hộp Thư Chat Nổi", function(state)
     MailButton.Visible = state
     if not state then ChatMainFrame.Visible = false end
@@ -1948,6 +1969,26 @@ local function ensureESP(p)
         txtHP.TextScaled = true
         txtHP.Font = Enum.Font.Gotham
     end
+end
+
+-- Hàm Raycast kiểm tra vật cản (Wall Check)
+local function IsVisible(targetPart)
+    if not Settings.AimWallCheck then return true end -- Nếu bật Xuyên Tường thì luôn trả về true
+    
+    local myChar = LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
+
+    local origin = Camera.CFrame.Position
+    local destination = targetPart.Position
+    local direction = destination - origin
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {myChar, targetPart.Parent}
+    raycastParams.IgnoreWater = true
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    return result == nil -- Nếu không va chạm vật cản nào thì trả về true
 end
 
 RunService.RenderStepped:Connect(function()
@@ -2036,7 +2077,7 @@ RunService.RenderStepped:Connect(function()
                 local pHum = pChar:FindFirstChildOfClass("Humanoid")
                 local pHrp = pChar.HumanoidRootPart
 
-                if pHum.Health > 0 then
+                if pHum.Health > 0 and IsVisible(pHrp) then
                     local pos, onScreen = Camera:WorldToViewportPoint(pHrp.Position)
                     local distToCenter = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
                     local distToPlayer = (pHrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -2051,6 +2092,11 @@ RunService.RenderStepped:Connect(function()
                         if distToCenter < shortestDist then
                             shortestDist = distToCenter
                             target = pHrp
+                        end
+                    elseif Settings.AimbotMode == "TargetName" and Settings.AimTargetName ~= "" then
+                        if player.Name:lower():find(Settings.AimTargetName, 1, true) or player.DisplayName:lower():find(Settings.AimTargetName, 1, true) then
+                            target = pHrp
+                            break
                         end
                     end
                 end

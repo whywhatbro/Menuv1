@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Improved Target Search & Server Join)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Fixed AutoClick Center & Advanced Player Search)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -163,7 +163,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v3.1"
+Title.Text = "⚡ MOBILE ADVANCED HUB v3.2"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -635,9 +635,9 @@ SmallServerBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
------------------- KHUNG TÌM KIẾM NGƯỜI CHƠI (BỔ SUNG HIỂN THỊ AVATAR) ------------------
+------------------ KHUNG TÌM KIẾM NGƯỜI CHƠI (NÂNG CẤP PRESENCE & GAME TITLE) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
-TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 280)
+TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 310)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
 local TUCorner = Instance.new("UICorner", TargetUserContainer) TUCorner.CornerRadius = UDim.new(0, 6)
@@ -645,7 +645,7 @@ local TUCorner = Instance.new("UICorner", TargetUserContainer) TUCorner.CornerRa
 local TUHeader = Instance.new("TextLabel", TargetUserContainer)
 TUHeader.Size = UDim2.new(1, -10, 0, 20)
 TUHeader.Position = UDim2.new(0, 5, 0, 2)
-TUHeader.Text = "👤 TÌM KIẾM NGƯỜI CHƠI (USERNAME / DISPLAYNAME)"
+TUHeader.Text = "👤 TÌM KIẾM NGƯỜI CHƠI (ONLINE / GAME / SERVER)"
 TUHeader.TextColor3 = Color3.fromRGB(0, 255, 200)
 TUHeader.TextXAlignment = Enum.TextXAlignment.Left
 TUHeader.Font = Enum.Font.GothamBold
@@ -654,7 +654,7 @@ TUHeader.BackgroundTransparency = 1
 
 local UserInputFrame = Instance.new("Frame", TargetUserContainer)
 UserInputFrame.Size = UDim2.new(0.96, 0, 0, 26)
-UserInputFrame.Position = UDim2.new(0.02, 0, 0.08, 0)
+UserInputFrame.Position = UDim2.new(0.02, 0, 0.07, 0)
 UserInputFrame.BackgroundTransparency = 1
 
 local TargetUserBox = Instance.new("TextBox", UserInputFrame)
@@ -677,7 +677,7 @@ SearchUserBtn.TextSize = 10
 local SUBStyle = Instance.new("UICorner", SearchUserBtn) SUBStyle.CornerRadius = UDim.new(0, 4)
 
 local UserStatusLabel = Instance.new("TextLabel", TargetUserContainer)
-UserStatusLabel.Position = UDim2.new(0.02, 0, 0.18, 0)
+UserStatusLabel.Position = UDim2.new(0.02, 0, 0.16, 0)
 UserStatusLabel.Size = UDim2.new(0.96, 0, 0, 12)
 UserStatusLabel.Text = "Nhập thông tin để tìm kiếm người chơi..."
 UserStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
@@ -686,16 +686,16 @@ UserStatusLabel.TextSize = 9
 UserStatusLabel.BackgroundTransparency = 1
 
 local SearchResultsFrame = Instance.new("Frame", TargetUserContainer)
-SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.23, 0)
-SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 185)
+SearchResultsFrame.Position = UDim2.new(0.02, 0, 0.21, 0)
+SearchResultsFrame.Size = UDim2.new(0.96, 0, 0, 220)
 SearchResultsFrame.BackgroundTransparency = 1
 
 local SRLayout = Instance.new("UIListLayout", SearchResultsFrame)
 SRLayout.Padding = UDim.new(0, 4)
 
 local PaginationFrame = Instance.new("Frame", TargetUserContainer)
-PaginationFrame.Position = UDim2.new(0.02, 0, 0.90, 0)
-PaginationFrame.Size = UDim2.new(0.96, 0, 0, 22)
+PaginationFrame.Position = UDim2.new(0.02, 0, 0.92, 0)
+PaginationFrame.Size = UDim2.new(0.96, 0, 0, 20)
 PaginationFrame.BackgroundTransparency = 1
 
 local PagLayout = Instance.new("UIListLayout", PaginationFrame)
@@ -705,7 +705,7 @@ PagLayout.Padding = UDim.new(0, 4)
 
 local currentSearchResults = {}
 local currentSearchPage = 1
-local itemsPerPage = 5
+local itemsPerPage = 4
 
 local function renderSearchPage(page)
     currentSearchPage = page
@@ -732,14 +732,14 @@ local function renderSearchPage(page)
         local uData = currentSearchResults[i]
         
         local itemFrame = Instance.new("Frame", SearchResultsFrame)
-        itemFrame.Size = UDim2.new(1, 0, 0, 33)
+        itemFrame.Size = UDim2.new(1, 0, 0, 50)
         itemFrame.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
         local IFC = Instance.new("UICorner", itemFrame) IFC.CornerRadius = UDim.new(0, 4)
 
-        -- Avatar hiển thị trong khung tìm kiếm
+        -- Avatar người chơi
         local searchAvatarImg = Instance.new("ImageLabel", itemFrame)
-        searchAvatarImg.Size = UDim2.new(0, 27, 0, 27)
-        searchAvatarImg.Position = UDim2.new(0, 3, 0.5, -13.5)
+        searchAvatarImg.Size = UDim2.new(0, 40, 0, 40)
+        searchAvatarImg.Position = UDim2.new(0, 5, 0.5, -20)
         searchAvatarImg.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
         local SAFCorner = Instance.new("UICorner", searchAvatarImg) SAFCorner.CornerRadius = UDim.new(1, 0)
 
@@ -749,45 +749,68 @@ local function renderSearchPage(page)
             end)
         end)
 
+        -- Text thông tin (Tên, Trạng thái Presence & Game đang chơi)
+        local statusText = ""
+        if uData.isCurrentServer then
+            statusText = "<font color=\"#00FF88\">🟢 Ở cùng Server hiện tại</font>"
+        elseif uData.presenceType == 2 then -- InGame
+            local gameName = uData.gameTitle or "Game Không Xác Định"
+            statusText = string.format("<font color=\"#00E5FF\">🎮 Đang chơi: %s</font>", gameName)
+        elseif uData.presenceType == 1 then -- Online
+            statusText = "<font color=\"#FFFF00\">🟡 Đang Online (Trang chủ/Website)</font>"
+        elseif uData.presenceType == 3 then -- Studio
+            statusText = "<font color=\"#FF9900\">🛠️ Đang trong Roblox Studio</font>"
+        else
+            statusText = "<font color=\"#888888\">🔴 Offline</font>"
+        end
+
         local uInfoLabel = Instance.new("TextLabel", itemFrame)
-        uInfoLabel.Position = UDim2.new(0, 35, 0, 0)
-        uInfoLabel.Size = UDim2.new(0.62, 0, 1, 0)
-        uInfoLabel.Text = string.format("<b>%s</b> (@%s)", uData.displayName, uData.username)
+        uInfoLabel.Position = UDim2.new(0, 50, 0, 2)
+        uInfoLabel.Size = UDim2.new(0.60, 0, 1, -4)
+        uInfoLabel.Text = string.format("<b>%s</b> (@%s)\n%s", uData.displayName, uData.username, statusText)
         uInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         uInfoLabel.RichText = true
         uInfoLabel.Font = Enum.Font.Gotham
         uInfoLabel.TextSize = 9
         uInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+        -- Nút bấm hành động
         local actionBtn = Instance.new("TextButton", itemFrame)
-        actionBtn.Position = UDim2.new(0.75, 0, 0.15, 0)
-        actionBtn.Size = UDim2.new(0.23, 0, 0.7, 0)
+        actionBtn.Position = UDim2.new(0.75, 0, 0.2, 0)
+        actionBtn.Size = UDim2.new(0.23, 0, 0.6, 0)
         actionBtn.Font = Enum.Font.GothamBold
         actionBtn.TextSize = 9
 
-        if uData.isIngame then
-            actionBtn.Text = "Rejoin"
-            actionBtn.BackgroundColor3 = Color3.fromRGB(217, 119, 6)
+        if uData.isCurrentServer then
+            actionBtn.Text = "Teleport"
+            actionBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
             actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            actionBtn.Text = "Join"
+        elseif uData.presenceType == 2 and uData.placeId then
+            actionBtn.Text = "Join Game"
             actionBtn.BackgroundColor3 = Color3.fromRGB(2, 132, 199)
             actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            actionBtn.Text = "Không Thể Join"
+            actionBtn.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
+            actionBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
         end
         local ABC = Instance.new("UICorner", actionBtn) ABC.CornerRadius = UDim.new(0, 4)
 
         actionBtn.MouseButton1Click:Connect(function()
-            local actionText = uData.isIngame and "REJOIN" or "JOIN"
-            ShowConfirmDialog(string.format("Bạn có chắc chắn muốn %s vào server của %s (@%s)?", actionText, uData.displayName, uData.username), function()
-                UserStatusLabel.Text = "🚀 Đang thực hiện chuyển hướng Server..."
-                if uData.placeId and uData.gameId and uData.gameId ~= "" then
-                    TeleportService:TeleportToPlaceInstance(uData.placeId, uData.gameId, LocalPlayer)
-                elseif uData.placeId then
-                    TeleportService:Teleport(uData.placeId, LocalPlayer)
-                else
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+            if uData.isCurrentServer then
+                local targetP = Players:FindFirstChild(uData.username)
+                if targetP and targetP.Character and targetP.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = targetP.Character.HumanoidRootPart.CFrame
                 end
-            end)
+            elseif uData.presenceType == 2 and uData.placeId then
+                ShowConfirmDialog(string.format("Bạn có muốn chuyển sang Game: '%s' để theo người chơi %s?", uData.gameTitle or "Game này", uData.displayName), function()
+                    if uData.gameId and uData.gameId ~= "" then
+                        TeleportService:TeleportToPlaceInstance(uData.placeId, uData.gameId, LocalPlayer)
+                    else
+                        TeleportService:Teleport(uData.placeId, LocalPlayer)
+                    end
+                end)
+            end
         end)
     end
 
@@ -816,25 +839,32 @@ local function ExecuteUserSearch()
         return
     end
 
-    UserStatusLabel.Text = "⏳ Đang quét dữ liệu Roblox API..."
+    UserStatusLabel.Text = "⏳ Đang quét dữ liệu & Trạng thái Online từ Roblox..."
     currentSearchResults = {}
 
     task.spawn(function()
         local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
-        
+        local foundUsers = {}
+        local userIds = {}
+
+        -- Ưu tiên tìm trong Server hiện tại
         for _, p in pairs(Players:GetPlayers()) do
             if p.Name:lower():find(query:lower(), 1, true) or p.DisplayName:lower():find(query:lower(), 1, true) then
-                table.insert(currentSearchResults, {
+                local uObj = {
                     userId = p.UserId,
                     username = p.Name,
                     displayName = p.DisplayName,
-                    isIngame = true,
+                    isCurrentServer = true,
+                    presenceType = 2,
                     placeId = game.PlaceId,
-                    gameId = game.JobId
-                })
+                    gameId = game.JobId,
+                    gameTitle = "Server Hiện Tại"
+                }
+                table.insert(foundUsers, uObj)
             end
         end
 
+        -- Tìm trên hệ thống Roblox
         pcall(function()
             local searchUrl = "https://users.roproxy.com/v1/users/search?keyword=" .. HttpService:UrlEncode(query) .. "&limit=10"
             local res = reqFunc and reqFunc({Url = searchUrl, Method = "GET"}) or {Body = game:HttpGet(searchUrl)}
@@ -843,17 +873,19 @@ local function ExecuteUserSearch()
                 if data and data.data then
                     for _, u in ipairs(data.data) do
                         local exists = false
-                        for _, existing in ipairs(currentSearchResults) do
+                        for _, existing in ipairs(foundUsers) do
                             if existing.userId == u.id then exists = true break end
                         end
                         if not exists then
-                            table.insert(currentSearchResults, {
+                            table.insert(foundUsers, {
                                 userId = u.id,
                                 username = u.name,
                                 displayName = u.displayName,
-                                isIngame = false,
+                                isCurrentServer = false,
+                                presenceType = 0,
                                 placeId = nil,
-                                gameId = nil
+                                gameId = nil,
+                                gameTitle = nil
                             })
                         end
                     end
@@ -861,6 +893,57 @@ local function ExecuteUserSearch()
             end
         end)
 
+        -- Lấy danh sách UserId để kiểm tra Presence (Online Status)
+        for _, u in ipairs(foundUsers) do
+            if not u.isCurrentServer then
+                table.insert(userIds, u.userId)
+            end
+        end
+
+        -- Query Presence API (Xác định Online, Offline, Game ID)
+        if #userIds > 0 then
+            pcall(function()
+                local presUrl = "https://presence.roproxy.com/v1/presence/users"
+                local bodyData = HttpService:JSONEncode({userIds = userIds})
+                local res = reqFunc and reqFunc({
+                    Url = presUrl,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = bodyData
+                })
+                
+                if res and res.Body then
+                    local pData = HttpService:JSONDecode(res.Body)
+                    if pData and pData.userPresences then
+                        for _, pInfo in ipairs(pData.userPresences) do
+                            for _, uObj in ipairs(foundUsers) do
+                                if uObj.userId == pInfo.userId then
+                                    uObj.presenceType = pInfo.userPresenceType -- 0: Offline, 1: Online, 2: InGame, 3: Studio
+                                    uObj.placeId = pInfo.placeId
+                                    uObj.gameId = pInfo.gameId
+                                    
+                                    -- Lấy Tên Game nếu player đang trong Game
+                                    if pInfo.placeId and pInfo.universeId then
+                                        pcall(function()
+                                            local uniUrl = "https://games.roproxy.com/v1/games?universeIds=" .. tostring(pInfo.universeId)
+                                            local uniRes = reqFunc and reqFunc({Url = uniUrl, Method = "GET"}) or {Body = game:HttpGet(uniUrl)}
+                                            if uniRes and uniRes.Body then
+                                                local uniData = HttpService:JSONDecode(uniRes.Body)
+                                                if uniData and uniData.data and uniData.data[1] then
+                                                    uObj.gameTitle = uniData.data[1].name
+                                                end
+                                            end
+                                        end)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+
+        currentSearchResults = foundUsers
         renderSearchPage(1)
     end)
 end
@@ -922,7 +1005,7 @@ addActionButton(MovePage, "🔒 Bật Script Shift Lock (Universal)", function()
 end)
 
 ---------------------------------------------------------
--- 4. TAB VISUAL (BỔ SUNG FULLBRIGHT FIX, X-RAY & NOCLIP CAMERA)
+-- 4. TAB VISUAL (FULLBRIGHT, X-RAY & NOCLIP CAMERA)
 ---------------------------------------------------------
 addSimpleToggle(VisualPage, "ESP Tên", function(val) Settings.ESP_Name = val end)
 addSimpleToggle(VisualPage, "ESP Viền Sáng", function(val) Settings.ESP_Highlight = val end)
@@ -954,7 +1037,6 @@ addSimpleToggle(VisualPage, "X-Ray (Nhìn Xuyên Tường)", function(val)
     ApplyXRay(val)
 end)
 
--- FullBright cải tiến: Khóa thời gian & độ sáng không lo bị server chuyển ngày/đêm
 addSimpleToggle(VisualPage, "Full Bright (Màn Hình Sáng Vô Hạn)", function(val)
     Settings.FullBrightActive = val
     if not val then
@@ -1236,6 +1318,7 @@ ACClearBtn.MouseButton1Click:Connect(function()
     AutoClickPoints = {}
 end)
 
+-- SỬA LỖI TỌA ĐỘ TÂM CLICK CHÍNH XÁC HOÀN HẢO
 ACRunBtn.MouseButton1Click:Connect(function()
     Settings.AC_Running = not Settings.AC_Running
     if Settings.AC_Running then
@@ -1252,10 +1335,15 @@ ACRunBtn.MouseButton1Click:Connect(function()
 
                 for i, p in ipairs(AutoClickPoints) do
                     if not Settings.AC_Running then break end
-                    local pos = p.Frame.AbsolutePosition + (p.Frame.AbsoluteSize / 2)
-                    VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, true, game, 0)
+                    -- Tính toán chính xác tuyệt đối trung tâm của hình tròn
+                    local absPos = p.Frame.AbsolutePosition
+                    local absSize = p.Frame.AbsoluteSize
+                    local centerX = absPos.X + (absSize.X / 2)
+                    local centerY = absPos.Y + (absSize.Y / 2)
+
+                    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
                     task.wait(0.02)
-                    VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, false, game, 0)
+                    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
                     task.wait(Settings.AC_Delay)
                 end
 
@@ -1528,7 +1616,7 @@ end
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    -- Đảm bảo FullBright hoạt động liên tục bất chấp chuyển ngày/đêm
+    -- Đảm bảo FullBright hoạt động liên tục
     if Settings.FullBrightActive then
         Lighting.Ambient = Color3.new(1, 1, 1)
         Lighting.OutdoorAmbient = Color3.new(1, 1, 1)

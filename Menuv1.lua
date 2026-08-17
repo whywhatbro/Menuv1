@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Advanced Player Tracking & Direct Teleport)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Advanced Player Tracking & Enhanced Server List)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -153,7 +153,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v2.7"
+Title.Text = "⚡ MOBILE ADVANCED HUB v2.8"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -337,7 +337,7 @@ local function addActionButton(page, name, callback)
 end
 
 ---------------------------------------------------------
--- 1. TAB SERVER & TÌM NGƯỜI CHƠI (TRACK & JOIN)
+-- 1. TAB SERVER & DANH SÁCH NGƯỜI CHƠI TRONG SERVER
 ---------------------------------------------------------
 local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
 ServerAgeLabel.Size = UDim2.new(0.99, 0, 0, 25)
@@ -361,7 +361,7 @@ task.spawn(function()
 end)
 
 local PlayerListFrame = Instance.new("Frame", ServerPage)
-PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 75)
+PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 130) -- Tăng độ rộng khung danh sách
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
 local PLCorner = Instance.new("UICorner", PlayerListFrame)
@@ -372,12 +372,14 @@ PlayerScroll.Size = UDim2.new(1, -6, 1, -6)
 PlayerScroll.Position = UDim2.new(0, 3, 0, 3)
 PlayerScroll.BackgroundTransparency = 1
 PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-PlayerScroll.ScrollBarThickness = 2
+PlayerScroll.ScrollBarThickness = 3
+PlayerScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 200)
+
 local PLayout = Instance.new("UIListLayout", PlayerScroll)
-PLayout.Padding = UDim.new(0, 4)
+PLayout.Padding = UDim.new(0, 5)
 
 PLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, PLayout.AbsoluteContentSize.Y)
+    PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, PLayout.AbsoluteContentSize.Y + 5)
 end)
 
 local function loadServerPlayers()
@@ -386,39 +388,64 @@ local function loadServerPlayers()
     end
     for _, p in pairs(Players:GetPlayers()) do
         local item = Instance.new("Frame", PlayerScroll)
-        item.Size = UDim2.new(1, 0, 0, 28)
+        item.Size = UDim2.new(1, 0, 0, 48) -- Tăng kích thước dòng
         item.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
 
         local itemCorner = Instance.new("UICorner", item)
-        itemCorner.CornerRadius = UDim.new(0, 4)
+        itemCorner.CornerRadius = UDim.new(0, 6)
 
+        -- Avatar người chơi
+        local avatarImg = Instance.new("ImageLabel", item)
+        avatarImg.Size = UDim2.new(0, 40, 0, 40)
+        avatarImg.Position = UDim2.new(0, 4, 0, 4)
+        avatarImg.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+
+        local avatarCorner = Instance.new("UICorner", avatarImg)
+        avatarCorner.CornerRadius = UDim.new(0, 20)
+
+        task.spawn(function()
+            pcall(function()
+                avatarImg.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+            end)
+        end)
+
+        -- Nhãn Tên & Tuổi Tài Khoản
         local nameLbl = Instance.new("TextLabel", item)
-        nameLbl.Position = UDim2.new(0, 8, 0, 0)
-        nameLbl.Size = UDim2.new(0.6, 0, 1, 0)
-        nameLbl.Text = p.DisplayName .. " (@" .. p.Name .. ")"
+        nameLbl.Position = UDim2.new(0, 50, 0, 4)
+        nameLbl.Size = UDim2.new(0.48, 0, 1, -8)
+        nameLbl.Text = string.format("<b>%s</b> (@%s)\n<font color=\"#00FFC8\">Tuổi Acc: %d ngày</font>", p.DisplayName, p.Name, p.AccountAge)
         nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
         nameLbl.Font = Enum.Font.Gotham
         nameLbl.TextSize = 10
+        nameLbl.RichText = true
         nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 
+        -- Nút Copy User
         local cReal = Instance.new("TextButton", item)
-        cReal.Position = UDim2.new(0.68, 0, 0.1, 0)
-        cReal.Size = UDim2.new(0.15, 0, 0.8, 0)
+        cReal.Position = UDim2.new(0.66, 0, 0.2, 0)
+        cReal.Size = UDim2.new(0.16, 0, 0.6, 0)
         cReal.Text = "Copy User"
-        cReal.Font = Enum.Font.Gotham
+        cReal.Font = Enum.Font.GothamBold
         cReal.TextSize = 9
         cReal.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
         cReal.TextColor3 = Color3.fromRGB(255, 255, 255)
+        
+        local cRealCorner = Instance.new("UICorner", cReal)
+        cRealCorner.CornerRadius = UDim.new(0, 4)
         cReal.MouseButton1Click:Connect(function() setclipboard(p.Name) end)
 
+        -- Nút Copy Display
         local cDisplay = Instance.new("TextButton", item)
-        cDisplay.Position = UDim2.new(0.84, 0, 0.1, 0)
-        cDisplay.Size = UDim2.new(0.15, 0, 0.8, 0)
+        cDisplay.Position = UDim2.new(0.83, 0, 0.2, 0)
+        cDisplay.Size = UDim2.new(0.16, 0, 0.6, 0)
         cDisplay.Text = "Copy Display"
-        cDisplay.Font = Enum.Font.Gotham
+        cDisplay.Font = Enum.Font.GothamBold
         cDisplay.TextSize = 9
         cDisplay.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
         cDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+        local cDispCorner = Instance.new("UICorner", cDisplay)
+        cDispCorner.CornerRadius = UDim.new(0, 4)
         cDisplay.MouseButton1Click:Connect(function() setclipboard(p.DisplayName) end)
     end
 end
@@ -429,7 +456,7 @@ addActionButton(ServerPage, "Rejoin Server (Vào lại)", function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
------------------- KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI (TÍCH HỢP QUÉT CHI TIẾT) ------------------
+------------------ KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI (TRACK & JOIN) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
 TargetUserContainer.Size = UDim2.new(0.99, 0, 0, 175)
 TargetUserContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 36)

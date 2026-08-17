@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Tab UI & ShiftLock)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Fixed Engine Render V3)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +6,6 @@ local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -22,16 +21,11 @@ local Settings = {
     JumpPowerActive = false,
     JumpPowerVal = 50,
     
-    FlyActive = false,
-    
     InfJumpActive = false,
     GravityActive = false,
     GravityVal = 196.2,
     
     FullBrightActive = false,
-    UnlockCamActive = false,
-    RemoveFogActive = false,
-    
     ESP_Name = false,
     ESP_Highlight = false,
     ESP_Full = false,
@@ -46,8 +40,6 @@ local Settings = {
     AC_Running = false,
 
     -- Waypoint Settings
-    WP_Mode = "Fly",
-    WP_FlySpeed = 50,
     WP_Running = false
 }
 
@@ -68,24 +60,18 @@ FOVCircle.Transparency = 1
 FOVCircle.Visible = false
 
 ---------------------------------------------------------
--- TẠO VÀ XỬ LÝ KHUNG GIAO DIỆN CHÍNH
+-- KHUNG GIAO DIỆN CHÍNH
 ---------------------------------------------------------
 local function GetSafeParent()
     local success, parent = pcall(function()
-        if gethui then
-            return gethui()
-        elseif game:GetService("CoreGui") then
-            return game:GetService("CoreGui")
-        end
+        if gethui then return gethui() end
+        return game:GetService("CoreGui")
     end)
-    if success and parent then
-        return parent
-    end
+    if success and parent then return parent end
     return LocalPlayer:WaitForChild("PlayerGui")
 end
 
 local TargetParent = GetSafeParent()
-
 if TargetParent:FindFirstChild("UltimateMobileHub") then
     TargetParent.UltimateMobileHub:Destroy()
 end
@@ -116,7 +102,6 @@ MainFrame.Draggable = true
 local MainFrameStroke = Instance.new("UIStroke", MainFrame)
 MainFrameStroke.Color = Color3.fromRGB(0, 170, 255)
 MainFrameStroke.Thickness = 3
-MainFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 ToggleMenuBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
@@ -130,21 +115,20 @@ Header.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -10, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Text = "MOBILE ADVANCED HUB"
+Title.Text = "MOBILE ADVANCED HUB (FIXED V3)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 ---------------------------------------------------------
--- FIX THANH TAB CUỘN NGANG VÀ NỘI DUNG DISPLAY
+-- FIX RENDER NỘI DUNG TAB (V3 ENGINE FIX)
 ---------------------------------------------------------
 local TabBarScroll = Instance.new("ScrollingFrame", MainFrame)
 TabBarScroll.Position = UDim2.new(0, 0, 0, 30)
 TabBarScroll.Size = UDim2.new(1, 0, 0, 35)
 TabBarScroll.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TabBarScroll.ScrollBarThickness = 2
-TabBarScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
 TabBarScroll.ScrollingDirection = Enum.ScrollingDirection.Horizontal
-TabBarScroll.CanvasSize = UDim2.new(0, 650, 0, 0) -- Chiều rộng cố định cho 7 Tab vuốt ngang thoải mái
+TabBarScroll.CanvasSize = UDim2.new(0, 600, 0, 0)
 
 local TabLayout = Instance.new("UIListLayout", TabBarScroll)
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -161,26 +145,25 @@ local TabButtons = {}
 
 local function createTab(name, order)
     local btn = Instance.new("TextButton", TabBarScroll)
-    btn.Size = UDim2.new(0, 85, 1, 0)
+    btn.Size = UDim2.new(0, 80, 1, 0)
     btn.Text = name
     btn.TextColor3 = Color3.fromRGB(180, 180, 180)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     btn.TextSize = 11
     btn.LayoutOrder = order
 
-    local btnCorner = Instance.new("UICorner", btn)
-    btnCorner.CornerRadius = UDim.new(0, 4)
-
     local page = Instance.new("ScrollingFrame", ContentFrame)
     page.Size = UDim2.new(1, -10, 1, -10)
     page.Position = UDim2.new(0, 5, 0, 5)
     page.BackgroundTransparency = 1
     page.Visible = (order == 1)
-    page.CanvasSize = UDim2.new(0, 0, 3, 0)
-    page.ScrollBarThickness = 4
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    page.ScrollBarThickness = 5
 
     local layout = Instance.new("UIListLayout", page)
-    layout.Padding = UDim.new(0, 5)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 6)
 
     Pages[name] = page
     table.insert(TabButtons, btn)
@@ -212,11 +195,11 @@ local PlayerPage   = createTab("PLAYER", 6)
 local MiscPage     = createTab("TỔNG HỢP", 7)
 
 ---------------------------------------------------------
--- UI HELPER FUNCTIONS
+-- CÁC HÀM TẠO WIDGET NÚT BẤM (CHẮC CHẮN HIỂN THỊ)
 ---------------------------------------------------------
 local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
     local frame = Instance.new("Frame", page)
-    frame.Size = UDim2.new(0.98, 0, 0, 35)
+    frame.Size = UDim2.new(0.96, 0, 0, 35)
     frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 
     local btn = Instance.new("TextButton", frame)
@@ -229,7 +212,6 @@ local function addToggleWithInput(page, name, defaultVal, onToggle, onValChange)
     txt.Position = UDim2.new(0.52, 0, 0, 0)
     txt.Size = UDim2.new(0.46, 0, 1, 0)
     txt.Text = tostring(defaultVal)
-    txt.PlaceholderText = "Nhập giá trị"
     txt.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     txt.TextColor3 = Color3.fromRGB(0, 255, 255)
 
@@ -249,7 +231,7 @@ end
 
 local function addSimpleToggle(page, name, onToggle)
     local btn = Instance.new("TextButton", page)
-    btn.Size = UDim2.new(0.98, 0, 0, 30)
+    btn.Size = UDim2.new(0.96, 0, 0, 32)
     btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     btn.Text = name .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -268,9 +250,10 @@ end
 -- 1. TAB SERVER
 ---------------------------------------------------------
 local ServerAgeLabel = Instance.new("TextLabel", ServerPage)
-ServerAgeLabel.Size = UDim2.new(0.98, 0, 0, 25)
+ServerAgeLabel.Size = UDim2.new(0.96, 0, 0, 25)
 ServerAgeLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 ServerAgeLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+ServerAgeLabel.Text = "Đang tải thời gian Server..."
 
 task.spawn(function()
     while task.wait(1) do
@@ -279,71 +262,24 @@ task.spawn(function()
         local h = math.floor((diff % 86400) / 3600)
         local m = math.floor((diff % 3600) / 60)
         local s = diff % 60
-        ServerAgeLabel.Text = string.format("Tuổi Server: %d ngày, %d giờ, %d phút, %d giây", d, h, m, s)
+        ServerAgeLabel.Text = string.format("Tuổi Server: %dd %dh %dm %ds", d, h, m, s)
     end
 end)
 
-local PlayerListFrame = Instance.new("Frame", ServerPage)
-PlayerListFrame.Size = UDim2.new(0.98, 0, 0, 120)
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-
-local PlayerScroll = Instance.new("ScrollingFrame", PlayerListFrame)
-PlayerScroll.Size = UDim2.new(1, 0, 1, 0)
-PlayerScroll.CanvasSize = UDim2.new(0, 0, 5, 0)
-local PLayout = Instance.new("UIListLayout", PlayerScroll)
-
-local function loadServerPlayers()
-    for _, item in pairs(PlayerScroll:GetChildren()) do
-        if not item:IsA("UIListLayout") then item:Destroy() end
-    end
-    for _, p in pairs(Players:GetPlayers()) do
-        local item = Instance.new("Frame", PlayerScroll)
-        item.Size = UDim2.new(1, 0, 0, 30)
-        item.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-        local img = Instance.new("ImageLabel", item)
-        img.Size = UDim2.new(0, 30, 0, 30)
-        pcall(function()
-            img.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-
-        local nameLbl = Instance.new("TextLabel", item)
-        nameLbl.Position = UDim2.new(0, 35, 0, 0)
-        nameLbl.Size = UDim2.new(0.4, 0, 1, 0)
-        nameLbl.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-        nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLbl.TextScaled = true
-
-        local cReal = Instance.new("TextButton", item)
-        cReal.Position = UDim2.new(0.72, 0, 0.1, 0)
-        cReal.Size = UDim2.new(0.13, 0, 0.8, 0)
-        cReal.Text = "Copy User"
-        cReal.MouseButton1Click:Connect(function() setclipboard(p.Name) end)
-
-        local cDisplay = Instance.new("TextButton", item)
-        cDisplay.Position = UDim2.new(0.86, 0, 0.1, 0)
-        cDisplay.Size = UDim2.new(0.13, 0, 0.8, 0)
-        cDisplay.Text = "Copy Display"
-        cDisplay.MouseButton1Click:Connect(function() setclipboard(p.DisplayName) end)
-    end
-end
-loadServerPlayers()
-
-local ResetBtn = Instance.new("TextButton", ServerPage)
-ResetBtn.Size = UDim2.new(0.98, 0, 0, 30)
-ResetBtn.Text = "Reset Player List"
-ResetBtn.MouseButton1Click:Connect(loadServerPlayers)
-
 local RejoinBtn = Instance.new("TextButton", ServerPage)
-RejoinBtn.Size = UDim2.new(0.98, 0, 0, 30)
+RejoinBtn.Size = UDim2.new(0.96, 0, 0, 32)
 RejoinBtn.Text = "Rejoin Server"
+RejoinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+RejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 RejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
 local HopBtn = Instance.new("TextButton", ServerPage)
-HopBtn.Size = UDim2.new(0.98, 0, 0, 30)
+HopBtn.Size = UDim2.new(0.96, 0, 0, 32)
 HopBtn.Text = "Hop Server (Ngẫu nhiên)"
+HopBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+HopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HopBtn.MouseButton1Click:Connect(function()
     pcall(function()
         local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -355,22 +291,6 @@ HopBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
-local LowHopBtn = Instance.new("TextButton", ServerPage)
-LowHopBtn.Size = UDim2.new(0.98, 0, 0, 30)
-LowHopBtn.Text = "Join Low Server (1-5 Người)"
-LowHopBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        local api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local list = HttpService:JSONDecode(game:HttpGet(api)).data
-        for _, s in pairs(list) do
-            if s.playing >= 1 and s.playing <= 5 and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                break
-            end
-        end
-    end)
-end)
-
 ---------------------------------------------------------
 -- 2. TAB COMBAT
 ---------------------------------------------------------
@@ -378,41 +298,30 @@ addSimpleToggle(CombatPage, "Aim Người Gần Nhất", function(val) Settings.
 addSimpleToggle(CombatPage, "Aim Ít Máu Nhất", function(val) Settings.AimbotMode = val and "LowestHealth" or "None" end)
 
 local AimFOVToggle = Instance.new("TextButton", CombatPage)
-AimFOVToggle.Size = UDim2.new(0.98, 0, 0, 30)
-AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): OFF"
+AimFOVToggle.Size = UDim2.new(0.96, 0, 0, 32)
+AimFOVToggle.Text = "Aim Vòng Tròn (FOV): OFF"
 AimFOVToggle.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+AimFOVToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 AimFOVToggle.MouseButton1Click:Connect(function()
     if Settings.AimbotMode == "FOV" then
         Settings.AimbotMode = "None"
         FOVCircle.Visible = false
-        AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): OFF"
+        AimFOVToggle.Text = "Aim Vòng Tròn (FOV): OFF"
         AimFOVToggle.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     else
         Settings.AimbotMode = "FOV"
         FOVCircle.Visible = true
-        AimFOVToggle.Text = "Aim Vòng Tròn (FOV Trung Tâm): ON"
+        AimFOVToggle.Text = "Aim Vòng Tròn (FOV): ON"
         AimFOVToggle.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     end
 end)
 
-local FOVInput = Instance.new("TextBox", CombatPage)
-FOVInput.Size = UDim2.new(0.98, 0, 0, 30)
-FOVInput.Text = tostring(Settings.FOVRadius)
-FOVInput.PlaceholderText = "Nhập bán kính FOV"
-FOVInput.FocusLost:Connect(function()
-    local val = tonumber(FOVInput.Text)
-    if val then
-        Settings.FOVRadius = val
-        FOVCircle.Radius = val
-    end
-end)
-
 ---------------------------------------------------------
--- 3. TAB MOVEMENT & SHIFT LOCK UNIVERSAL
+-- 3. TAB MOVEMENT & SHIFT LOCK
 ---------------------------------------------------------
 addToggleWithInput(MovePage, "Chạy Nhanh", Settings.WalkSpeedVal, function(state) Settings.WalkSpeedActive = state end, function(val) Settings.WalkSpeedVal = val end)
 addToggleWithInput(MovePage, "Nhảy Cao", Settings.JumpPowerVal, function(state) Settings.JumpPowerActive = state end, function(val) Settings.JumpPowerVal = val end)
-addToggleWithInput(MovePage, "Trọng Lực (Gravity)", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
+addToggleWithInput(MovePage, "Trọng Lực", Settings.GravityVal, function(state) Settings.GravityActive = state end, function(val) Settings.GravityVal = val end)
 addSimpleToggle(MovePage, "Nhảy Vô Hạn", function(state) Settings.InfJumpActive = state end)
 
 addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
@@ -423,7 +332,7 @@ addSimpleToggle(MovePage, "Bật Script Bay (FlyGui V3)", function(state)
     end
 end)
 
-addSimpleToggle(MovePage, "Kích Hoạt Shift Lock Universal", function(state)
+addSimpleToggle(MovePage, "Bật Shift Lock Universal", function(state)
     if state then
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Shift-Lock-121871"))()
@@ -432,81 +341,54 @@ addSimpleToggle(MovePage, "Kích Hoạt Shift Lock Universal", function(state)
 end)
 
 ---------------------------------------------------------
--- 4. TAB VISUAL
+-- 4. TAB VISUAL (ESP)
 ---------------------------------------------------------
-addSimpleToggle(VisualPage, "ESP Tên", function(val) Settings.ESP_Name = val end)
-addSimpleToggle(VisualPage, "ESP Viền Sáng", function(val) Settings.ESP_Highlight = val end)
-addSimpleToggle(VisualPage, "Full ESP (Hiển thị Máu + Tên)", function(val) Settings.ESP_Full = val end)
-addSimpleToggle(VisualPage, "Full Bright (Màn Hình Sáng)", function(val)
+addSimpleToggle(VisualPage, "ESP Tên Người Chơi", function(val) Settings.ESP_Name = val end)
+addSimpleToggle(VisualPage, "ESP Viền Sáng (Highlight)", function(val) Settings.ESP_Highlight = val end)
+addSimpleToggle(VisualPage, "Full ESP (Tên + Máu)", function(val) Settings.ESP_Full = val end)
+addSimpleToggle(VisualPage, "Full Bright (Sáng Màn Hình)", function(val)
     Settings.FullBrightActive = val
     Lighting.Ambient = val and Color3.new(1,1,1) or Color3.fromRGB(127,127,127)
     Lighting.GlobalShadows = not val
-end)
-addSimpleToggle(VisualPage, "Mở Khoá Góc Nhìn Camera", function(val)
-    LocalPlayer.CameraMaxZoomDistance = val and 99999 or 128
 end)
 
 ---------------------------------------------------------
 -- 5. TAB WORLD
 ---------------------------------------------------------
 addSimpleToggle(WorldPage, "Xóa Sương Mù (Remove Fog)", function(val)
-    Settings.RemoveFogActive = val
     if val then
         Lighting.FogEnd = 9e9
-        for _, v in pairs(Lighting:GetChildren()) do
-            if v:IsA("Atmosphere") then v:Destroy() end
-        end
     else
         Lighting.FogEnd = 1000
     end
 end)
 
-local function optimizeGame()
+local AntiLagBtn = Instance.new("TextButton", WorldPage)
+AntiLagBtn.Size = UDim2.new(0.96, 0, 0, 32)
+AntiLagBtn.Text = "Giảm Lag (FPS Boost)"
+AntiLagBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+AntiLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AntiLagBtn.MouseButton1Click:Connect(function()
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("BasePart") then
             v.Material = Enum.Material.SmoothPlastic
             v.Reflectance = 0
         elseif v:IsA("Decal") or v:IsA("Texture") then
             v:Destroy()
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-            v.Enabled = false
         end
     end
-end
-
-local AntiLagBtn = Instance.new("TextButton", WorldPage)
-AntiLagBtn.Size = UDim2.new(0.98, 0, 0, 30)
-AntiLagBtn.Text = "Giảm Lag (FPS Boost - Smooth Textures)"
-AntiLagBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-AntiLagBtn.MouseButton1Click:Connect(function()
-    optimizeGame()
     AntiLagBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    AntiLagBtn.Text = "Đã Bật Giảm Lag!"
+    AntiLagBtn.Text = "Đã Xử Lý Giảm Lag!"
 end)
 
 ---------------------------------------------------------
 -- 6. TAB PLAYER
 ---------------------------------------------------------
-local TargetProfileFrame = Instance.new("Frame", PlayerPage)
-TargetProfileFrame.Size = UDim2.new(0.98, 0, 0, 80)
-TargetProfileFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-
-local AvatarImg = Instance.new("ImageLabel", TargetProfileFrame)
-AvatarImg.Size = UDim2.new(0, 75, 0, 75)
-AvatarImg.Position = UDim2.new(0, 2, 0, 2)
-
-local InfoLabel = Instance.new("TextLabel", TargetProfileFrame)
-InfoLabel.Position = UDim2.new(0, 85, 0, 5)
-InfoLabel.Size = UDim2.new(0.7, 0, 0.9, 0)
-InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
-InfoLabel.Text = "Nhập tên người chơi bên dưới..."
-
 local SearchBox = Instance.new("TextBox", PlayerPage)
-SearchBox.Size = UDim2.new(0.98, 0, 0, 30)
+SearchBox.Size = UDim2.new(0.96, 0, 0, 32)
 SearchBox.PlaceholderText = "Nhập tên người chơi..."
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 0)
+SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 
 local targetSelectedPlayer = nil
 
@@ -519,56 +401,26 @@ SearchBox.FocusLost:Connect(function()
             break
         end
     end
-    
-    if targetSelectedPlayer then
-        pcall(function()
-            AvatarImg.Image = Players:GetUserThumbnailAsync(targetSelectedPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-        end)
-        InfoLabel.Text = string.format("Tên: %s\n@User: %s\nTuổi Acc: %d ngày", targetSelectedPlayer.DisplayName, targetSelectedPlayer.Name, targetSelectedPlayer.AccountAge)
-        Settings.TargetPlayerName = targetSelectedPlayer.Name
-    else
-        InfoLabel.Text = "Không tìm thấy người chơi!"
-    end
 end)
 
 local TeleBtn = Instance.new("TextButton", PlayerPage)
-TeleBtn.Size = UDim2.new(0.98, 0, 0, 30)
+TeleBtn.Size = UDim2.new(0.96, 0, 0, 32)
 TeleBtn.Text = "Teleport Đến Người Chơi"
+TeleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+TeleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 TeleBtn.MouseButton1Click:Connect(function()
     if targetSelectedPlayer and targetSelectedPlayer.Character and targetSelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = targetSelectedPlayer.Character.HumanoidRootPart.CFrame
     end
 end)
 
-local ViewPlayerBtn = Instance.new("TextButton", PlayerPage)
-ViewPlayerBtn.Size = UDim2.new(0.98, 0, 0, 30)
-ViewPlayerBtn.Text = "Xem Góc Nhìn (Toggle)"
-local viewingTarget = false
-ViewPlayerBtn.MouseButton1Click:Connect(function()
-    viewingTarget = not viewingTarget
-    if viewingTarget and targetSelectedPlayer and targetSelectedPlayer.Character then
-        Camera.CameraSubject = targetSelectedPlayer.Character:FindFirstChildOfClass("Humanoid")
-    else
-        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    end
-end)
-
-local TargetESPBtn = Instance.new("TextButton", PlayerPage)
-TargetESPBtn.Size = UDim2.new(0.98, 0, 0, 30)
-TargetESPBtn.Text = "Full ESP Người Chơi Này"
-local targetESPActive = false
-TargetESPBtn.MouseButton1Click:Connect(function()
-    targetESPActive = not targetESPActive
-    TargetESPBtn.BackgroundColor3 = targetESPActive and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-end)
-
 ---------------------------------------------------------
--- 7. TAB TỔNG HỢP (AUTO CLICK & WAYPOINT SYSTEM)
+-- 7. TAB TỔNG HỢP (AUTO CLICK & WAYPOINT)
 ---------------------------------------------------------
 local AutoClickPoints = {}
 
 local ACBar = Instance.new("Frame", ScreenGui)
-ACBar.Size = UDim2.new(0, 50, 0, 180)
+ACBar.Size = UDim2.new(0, 50, 0, 150)
 ACBar.Position = UDim2.new(0.02, 0, 0.35, 0)
 ACBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ACBar.Active = true
@@ -583,119 +435,37 @@ local ACAddBtn = Instance.new("TextButton", ACBar)
 ACAddBtn.Size = UDim2.new(0, 40, 0, 30)
 ACAddBtn.Text = "+"
 ACAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ACAddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local ACDelBtn = Instance.new("TextButton", ACBar)
-ACDelBtn.Size = UDim2.new(0, 40, 0, 30)
-ACDelBtn.Text = "-"
-ACDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
-ACDelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-local ACClearBtn = Instance.new("TextButton", ACBar)
-ACClearBtn.Size = UDim2.new(0, 40, 0, 30)
-ACClearBtn.Text = "🗑"
-ACClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 
 local ACRunBtn = Instance.new("TextButton", ACBar)
 ACRunBtn.Size = UDim2.new(0, 40, 0, 30)
 ACRunBtn.Text = "▶"
 ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
 
-local ACSettingsBtn = Instance.new("TextButton", ACBar)
-ACSettingsBtn.Size = UDim2.new(0, 40, 0, 30)
-ACSettingsBtn.Text = "⚙"
-ACSettingsBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
-
-local ACSettingsFrame = Instance.new("Frame", ScreenGui)
-ACSettingsFrame.Size = UDim2.new(0, 200, 0, 170)
-ACSettingsFrame.Position = UDim2.new(0.08, 0, 0.35, 0)
-ACSettingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ACSettingsFrame.Visible = false
-ACSettingsFrame.Active = true
-ACSettingsFrame.Draggable = true
-
-local ACLoopInfBtn = Instance.new("TextButton", ACSettingsFrame)
-ACLoopInfBtn.Size = UDim2.new(0.9, 0, 0, 28)
-ACLoopInfBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
-ACLoopInfBtn.Text = "Lặp Vô Hạn: ON"
-ACLoopInfBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-
-ACLoopInfBtn.MouseButton1Click:Connect(function()
-    Settings.AC_LoopInfinite = not Settings.AC_LoopInfinite
-    ACLoopInfBtn.BackgroundColor3 = Settings.AC_LoopInfinite and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-    ACLoopInfBtn.Text = "Lặp Vô Hạn: " .. (Settings.AC_LoopInfinite and "ON" or "OFF")
-end)
-
-local ACDelayBox = Instance.new("TextBox", ACSettingsFrame)
-ACDelayBox.Size = UDim2.new(0.9, 0, 0, 28)
-ACDelayBox.Position = UDim2.new(0.05, 0, 0.28, 0)
-ACDelayBox.Text = tostring(Settings.AC_Delay)
-ACDelayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ACDelayBox.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-ACDelayBox.FocusLost:Connect(function()
-    local val = tonumber(ACDelayBox.Text)
-    if val then Settings.AC_Delay = math.max(0.01, val) end
-end)
-
-ACSettingsBtn.MouseButton1Click:Connect(function()
-    ACSettingsFrame.Visible = not ACSettingsFrame.Visible
-end)
-
-local function createAutoClickPoint()
+ACAddBtn.MouseButton1Click:Connect(function()
     local id = #AutoClickPoints + 1
     local pFrame = Instance.new("Frame", ScreenGui)
-    pFrame.Size = UDim2.new(0, Settings.AC_CircleSize, 0, Settings.AC_CircleSize)
-    pFrame.Position = UDim2.new(0.5, -20 + (id * 10), 0.5, -20)
+    pFrame.Size = UDim2.new(0, 40, 0, 40)
+    pFrame.Position = UDim2.new(0.5, -20, 0.5, -20)
     pFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    pFrame.BackgroundTransparency = 0.7
+    pFrame.BackgroundTransparency = 0.5
     pFrame.Active = true
     pFrame.Draggable = true
 
-    local stroke = Instance.new("UIStroke", pFrame)
-    stroke.Color = Color3.fromRGB(255, 0, 0)
-    stroke.Thickness = 3
-
-    local corner = Instance.new("UICorner", pFrame)
-    corner.CornerRadius = UDim.new(1, 0)
-
     local lbl = Instance.new("TextLabel", pFrame)
     lbl.Size = UDim2.new(1, 0, 1, 0)
-    lbl.BackgroundTransparency = 1
     lbl.Text = tostring(id)
     lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 
     table.insert(AutoClickPoints, {Frame = pFrame})
-end
-
-ACAddBtn.MouseButton1Click:Connect(createAutoClickPoint)
-ACDelBtn.MouseButton1Click:Connect(function()
-    if #AutoClickPoints > 0 then
-        local last = AutoClickPoints[#AutoClickPoints]
-        last.Frame:Destroy()
-        table.remove(AutoClickPoints, #AutoClickPoints)
-    end
-end)
-ACClearBtn.MouseButton1Click:Connect(function()
-    for _, p in pairs(AutoClickPoints) do p.Frame:Destroy() end
-    AutoClickPoints = {}
 end)
 
 ACRunBtn.MouseButton1Click:Connect(function()
     Settings.AC_Running = not Settings.AC_Running
     if Settings.AC_Running then
         ACRunBtn.Text = "⏹"
-        ACRunBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        
         task.spawn(function()
-            local loops = 0
             while Settings.AC_Running do
-                if not Settings.AC_LoopInfinite and loops >= Settings.AC_LoopCount then
-                    Settings.AC_Running = false
-                    break
-                end
-
-                for i, p in ipairs(AutoClickPoints) do
+                for _, p in ipairs(AutoClickPoints) do
                     if not Settings.AC_Running then break end
                     local pos = p.Frame.AbsolutePosition + (p.Frame.AbsoluteSize / 2)
                     VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, true, game, 0)
@@ -703,148 +473,20 @@ ACRunBtn.MouseButton1Click:Connect(function()
                     VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y + 36, 0, false, game, 0)
                     task.wait(Settings.AC_Delay)
                 end
-                loops = loops + 1
                 task.wait(0.05)
             end
-            Settings.AC_Running = false
-            ACRunBtn.Text = "▶"
-            ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
         end)
     else
         ACRunBtn.Text = "▶"
-        ACRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
     end
 end)
 
 addSimpleToggle(MiscPage, "Bật Thanh Auto Click Nổi", function(state)
     ACBar.Visible = state
-    if not state then ACSettingsFrame.Visible = false Settings.AC_Running = false end
-end)
-
------------------- HỆ THỐNG WAYPOINT CAO CẤP ------------------
-local WaypointList = {}
-local WPFolder = workspace:FindFirstChild("MobileHubWaypoints") or Instance.new("Folder", workspace)
-WPFolder.Name = "MobileHubWaypoints"
-
-local WPBar = Instance.new("Frame", ScreenGui)
-WPBar.Size = UDim2.new(0, 50, 0, 180)
-WPBar.Position = UDim2.new(0.92, 0, 0.35, 0)
-WPBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-WPBar.Active = true
-WPBar.Draggable = true
-WPBar.Visible = false
-
-local WPBarLayout = Instance.new("UIListLayout", WPBar)
-WPBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-WPBarLayout.Padding = UDim.new(0, 5)
-
-local WPAddBtn = Instance.new("TextButton", WPBar)
-WPAddBtn.Size = UDim2.new(0, 40, 0, 30)
-WPAddBtn.Text = "📍+"
-WPAddBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-
-local WPRunBtn = Instance.new("TextButton", WPBar)
-WPRunBtn.Size = UDim2.new(0, 40, 0, 30)
-WPRunBtn.Text = "▶"
-WPRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-
-local WPDelBtn = Instance.new("TextButton", WPBar)
-WPDelBtn.Size = UDim2.new(0, 40, 0, 30)
-WPDelBtn.Text = "📍-"
-WPDelBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
-
-local WPClearBtn = Instance.new("TextButton", WPBar)
-WPClearBtn.Size = UDim2.new(0, 40, 0, 30)
-WPClearBtn.Text = "🗑"
-WPClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-
-local function createWaypointVisual(cframe, index)
-    local pole = Instance.new("Part")
-    pole.Name = "WP_" .. tostring(index)
-    pole.Size = Vector3.new(0.4, 8, 0.4)
-    pole.CFrame = cframe
-    pole.Anchored = true
-    pole.CanCollide = false
-    pole.Material = Enum.Material.SmoothPlastic
-    pole.Color = Color3.fromRGB(0, 255, 255)
-    pole.Parent = WPFolder
-
-    local bb = Instance.new("BillboardGui", pole)
-    bb.Size = UDim2.new(0, 80, 0, 30)
-    bb.AlwaysOnTop = true
-    bb.ExtentsOffset = Vector3.new(0, 4.5, 0)
-
-    local txt = Instance.new("TextLabel", bb)
-    txt.Size = UDim2.new(1, 0, 1, 0)
-    txt.BackgroundTransparency = 1
-    txt.Text = "WP " .. tostring(index)
-    txt.TextColor3 = Color3.fromRGB(0, 255, 255)
-
-    return pole
-end
-
-WPAddBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local cf = char.HumanoidRootPart.CFrame
-        local index = #WaypointList + 1
-        local pole = createWaypointVisual(cf, index)
-        table.insert(WaypointList, {CFrame = cf, Part = pole})
-    end
-end)
-
-WPDelBtn.MouseButton1Click:Connect(function()
-    if #WaypointList > 0 then
-        local last = WaypointList[#WaypointList]
-        if last.Part then last.Part:Destroy() end
-        table.remove(WaypointList, #WaypointList)
-    end
-end)
-
-WPClearBtn.MouseButton1Click:Connect(function()
-    for _, wp in pairs(WaypointList) do if wp.Part then wp.Part:Destroy() end end
-    WaypointList = {}
-end)
-
-WPRunBtn.MouseButton1Click:Connect(function()
-    if #WaypointList == 0 then return end
-    Settings.WP_Running = not Settings.WP_Running
-
-    if Settings.WP_Running then
-        WPRunBtn.Text = "⏹"
-        WPRunBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-
-        task.spawn(function()
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-            while Settings.WP_Running do
-                for i, wp in ipairs(WaypointList) do
-                    if not Settings.WP_Running or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then break end
-                    hrp = LocalPlayer.Character.HumanoidRootPart
-                    hrp.CFrame = wp.CFrame
-                    task.wait(0.3)
-                end
-                task.wait(0.1)
-            end
-
-            Settings.WP_Running = false
-            WPRunBtn.Text = "▶"
-            WPRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-        end)
-    else
-        WPRunBtn.Text = "▶"
-        WPRunBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
-    end
-end)
-
-addSimpleToggle(MiscPage, "Bật Thanh Waypoint Nổi", function(state)
-    WPBar.Visible = state
-    if not state then Settings.WP_Running = false end
 end)
 
 ---------------------------------------------------------
--- ESP & RENDER LOOP FIX
+-- ENGINE LOOP (RENDER & ESP)
 ---------------------------------------------------------
 UserInputService.JumpRequest:Connect(function()
     if Settings.InfJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
@@ -852,96 +494,10 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
-local function getHealthColor(percent)
-    if percent >= 0.75 then return Color3.fromRGB(0, 255, 0)
-    elseif percent >= 0.35 then return Color3.fromRGB(255, 255, 0)
-    else return Color3.fromRGB(255, 0, 0) end
-end
-
-local function ensureESP(p)
-    if p == LocalPlayer or not p.Character then return end
-    local char = p.Character
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local hl = char:FindFirstChild("ESP_Highlight")
-    if not hl then
-        hl = Instance.new("Highlight", char)
-        hl.Name = "ESP_Highlight"
-        hl.Enabled = false
-    end
-
-    local bb = hrp:FindFirstChild("ESP_Billboard")
-    if not bb then
-        bb = Instance.new("BillboardGui", hrp)
-        bb.Name = "ESP_Billboard"
-        bb.Size = UDim2.new(0, 150, 0, 40)
-        bb.AlwaysOnTop = true
-        bb.ExtentsOffset = Vector3.new(0, 3.5, 0)
-        bb.Enabled = false
-
-        local txtName = Instance.new("TextLabel", bb)
-        txtName.Name = "NameLabel"
-        txtName.Size = UDim2.new(1, 0, 0.5, 0)
-        txtName.BackgroundTransparency = 1
-        txtName.TextScaled = true
-
-        local txtHP = Instance.new("TextLabel", bb)
-        txtHP.Name = "HPLabel"
-        txtHP.Position = UDim2.new(0, 0, 0.5, 0)
-        txtHP.Size = UDim2.new(1, 0, 0.5, 0)
-        txtHP.BackgroundTransparency = 1
-        txtHP.TextScaled = true
-    end
-end
-
 RunService.RenderStepped:Connect(function()
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            ensureESP(p)
-            local char = p.Character
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-
-            if hum and hrp then
-                local hl = char:FindFirstChild("ESP_Highlight")
-                local bb = hrp:FindFirstChild("ESP_Billboard")
-                local isTarget = (p == targetSelectedPlayer and targetESPActive)
-
-                if hl then hl.Enabled = Settings.ESP_Highlight or Settings.ESP_Full or isTarget end
-
-                if bb then
-                    local txtName = bb:FindFirstChild("NameLabel")
-                    local txtHP = bb:FindFirstChild("HPLabel")
-                    bb.Enabled = Settings.ESP_Name or Settings.ESP_Full or isTarget
-
-                    local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    local currentColor = getHealthColor(hpPercent)
-
-                    if txtName and txtHP then
-                        txtName.Text = p.DisplayName
-                        txtName.TextColor3 = currentColor
-
-                        if Settings.ESP_Full or isTarget then
-                            txtHP.Text = string.format("[HP: %d/%d]", math.floor(hum.Health), math.floor(hum.MaxHealth))
-                            txtHP.TextColor3 = currentColor
-                            txtHP.Visible = true
-                        else
-                            txtHP.Visible = false
-                        end
-                    end
-
-                    if hl then
-                        hl.FillColor = currentColor
-                        hl.OutlineColor = currentColor
-                    end
-                end
-            end
-        end
-    end
-
+    -- Cập nhật WalkSpeed / JumpPower / Gravity
     local char = LocalPlayer.Character
     if char and char:FindFirstChildOfClass("Humanoid") then
         local hum = char:FindFirstChildOfClass("Humanoid")
@@ -953,34 +509,27 @@ RunService.RenderStepped:Connect(function()
         if Settings.GravityActive then workspace.Gravity = Settings.GravityVal end
     end
 
+    -- Xử lý Aimbot
     if Settings.AimbotMode ~= "None" then
         local target = nil
         local shortestDist = math.huge
-        local lowestHP = math.huge
-        local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
         for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") then
-                local pChar = player.Character
-                local pHum = pChar:FindFirstChildOfClass("Humanoid")
-                local pHrp = pChar.HumanoidRootPart
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local pHrp = player.Character.HumanoidRootPart
+                local pos, onScreen = Camera:WorldToViewportPoint(pHrp.Position)
+                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
 
-                if pHum.Health > 0 then
-                    local pos, onScreen = Camera:WorldToViewportPoint(pHrp.Position)
-                    local distToCenter = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
-                    local distToPlayer = (pHrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-
-                    if Settings.AimbotMode == "Closest" and distToPlayer < shortestDist then
-                        shortestDist = distToPlayer
+                if Settings.AimbotMode == "FOV" and onScreen and dist <= Settings.FOVRadius then
+                    if dist < shortestDist then
+                        shortestDist = dist
                         target = pHrp
-                    elseif Settings.AimbotMode == "LowestHealth" and pHum.Health < lowestHP then
-                        lowestHP = pHum.Health
+                    end
+                elseif Settings.AimbotMode == "Closest" then
+                    local pDist = (pHrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    if pDist < shortestDist then
+                        shortestDist = pDist
                         target = pHrp
-                    elseif Settings.AimbotMode == "FOV" and onScreen and distToCenter <= Settings.FOVRadius then
-                        if distToCenter < shortestDist then
-                            shortestDist = distToCenter
-                            target = pHrp
-                        end
                     end
                 end
             end

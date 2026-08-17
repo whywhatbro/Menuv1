@@ -1,4 +1,4 @@
--- Roblox Mobile Hub - Ultimate Custom Edition (Advanced Player Tracking & Enhanced Server List)
+-- Roblox Mobile Hub - Ultimate Custom Edition (Improved Visibility & Server Hop Options)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -153,7 +153,7 @@ HeaderCorner.CornerRadius = UDim.new(0, 10)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "⚡ MOBILE ADVANCED HUB v2.8"
+Title.Text = "⚡ MOBILE ADVANCED HUB v2.9"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -361,7 +361,7 @@ task.spawn(function()
 end)
 
 local PlayerListFrame = Instance.new("Frame", ServerPage)
-PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 130) -- Tăng độ rộng khung danh sách
+PlayerListFrame.Size = UDim2.new(0.99, 0, 0, 130)
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(22, 27, 36)
 
 local PLCorner = Instance.new("UICorner", PlayerListFrame)
@@ -388,7 +388,7 @@ local function loadServerPlayers()
     end
     for _, p in pairs(Players:GetPlayers()) do
         local item = Instance.new("Frame", PlayerScroll)
-        item.Size = UDim2.new(1, 0, 0, 48) -- Tăng kích thước dòng
+        item.Size = UDim2.new(1, 0, 0, 48)
         item.BackgroundColor3 = Color3.fromRGB(30, 36, 48)
 
         local itemCorner = Instance.new("UICorner", item)
@@ -409,11 +409,11 @@ local function loadServerPlayers()
             end)
         end)
 
-        -- Nhãn Tên & Tuổi Tài Khoản
+        -- Nhãn Tên & Tuổi Tài Khoản (Đã làm rõ nét chữ bằng màu VÀNG VÀ BỎ ĐẬM)
         local nameLbl = Instance.new("TextLabel", item)
         nameLbl.Position = UDim2.new(0, 50, 0, 4)
         nameLbl.Size = UDim2.new(0.48, 0, 1, -8)
-        nameLbl.Text = string.format("<b>%s</b> (@%s)\n<font color=\"#00FFC8\">Tuổi Acc: %d ngày</font>", p.DisplayName, p.Name, p.AccountAge)
+        nameLbl.Text = string.format("<b>%s</b> (@%s)\n<b><font color=\"#FFFF00\">Tuổi Acc: %d ngày</font></b>", p.DisplayName, p.Name, p.AccountAge)
         nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
         nameLbl.Font = Enum.Font.Gotham
         nameLbl.TextSize = 10
@@ -451,10 +451,104 @@ local function loadServerPlayers()
 end
 loadServerPlayers()
 
-addActionButton(ServerPage, "Làm mới danh sách Player trong Server", loadServerPlayers)
-addActionButton(ServerPage, "Rejoin Server (Vào lại)", function()
+addActionButton(ServerPage, "🔄 Làm mới danh sách Player trong Server", loadServerPlayers)
+
+------------------ HỆ THỐNG ĐỔI SERVER (SERVER HOPPING) ------------------
+local ServerHopFrame = Instance.new("Frame", ServerPage)
+ServerHopFrame.Size = UDim2.new(0.99, 0, 0, 40)
+ServerHopFrame.BackgroundTransparency = 1
+
+local SHLayout = Instance.new("UIListLayout", ServerHopFrame)
+SHLayout.FillDirection = Enum.FillDirection.Horizontal
+SHLayout.Padding = UDim.new(0.02, 0)
+
+-- Nút Vào lại Server Hiện Tại
+local RejoinBtn = Instance.new("TextButton", ServerHopFrame)
+RejoinBtn.Size = UDim2.new(0.32, 0, 1, 0)
+RejoinBtn.Text = "Vào Lại Server"
+RejoinBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
+RejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RejoinBtn.Font = Enum.Font.GothamBold
+RejoinBtn.TextSize = 9
+local RJC = Instance.new("UICorner", RejoinBtn) RJC.CornerRadius = UDim.new(0, 6)
+local RJS = Instance.new("UIStroke", RejoinBtn) RJS.Color = Color3.fromRGB(0, 170, 255)
+
+RejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
+
+-- Nút Chuyển sang Server Khác Ngẫu Nhiên
+local ServerHopBtn = Instance.new("TextButton", ServerHopFrame)
+ServerHopBtn.Size = UDim2.new(0.32, 0, 1, 0)
+ServerHopBtn.Text = "Vào Server Khác"
+ServerHopBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
+ServerHopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ServerHopBtn.Font = Enum.Font.GothamBold
+ServerHopBtn.TextSize = 9
+local SHC = Instance.new("UICorner", ServerHopBtn) SHC.CornerRadius = UDim.new(0, 6)
+local SHS = Instance.new("UIStroke", ServerHopBtn) SHS.Color = Color3.fromRGB(0, 170, 255)
+
+local function HopRandomServer()
+    local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
+    local url = "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    task.spawn(function()
+        local res = reqFunc and reqFunc({Url = url, Method = "GET"}) or {Body = game:HttpGet(url)}
+        if res and res.Body then
+            local data = HttpService:JSONDecode(res.Body)
+            if data and data.data then
+                local validServers = {}
+                for _, s in ipairs(data.data) do
+                    if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                        table.insert(validServers, s.id)
+                    end
+                end
+                if #validServers > 0 then
+                    local targetJob = validServers[math.random(1, #validServers)]
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJob, LocalPlayer)
+                end
+            end
+        end
+    end)
+end
+ServerHopBtn.MouseButton1Click:Connect(HopRandomServer)
+
+-- Nút Vào Server Ít Người Nhất
+local SmallServerBtn = Instance.new("TextButton", ServerHopFrame)
+SmallServerBtn.Size = UDim2.new(0.32, 0, 1, 0)
+SmallServerBtn.Text = "Vào Server Ít Người"
+SmallServerBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 55)
+SmallServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SmallServerBtn.Font = Enum.Font.GothamBold
+SmallServerBtn.TextSize = 9
+local SSC = Instance.new("UICorner", SmallServerBtn) SSC.CornerRadius = UDim.new(0, 6)
+local SSS = Instance.new("UIStroke", SmallServerBtn) SSS.Color = Color3.fromRGB(0, 170, 255)
+
+local function HopSmallestServer()
+    local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
+    local url = "https://games.roproxy.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100"
+    
+    task.spawn(function()
+        local res = reqFunc and reqFunc({Url = url, Method = "GET"}) or {Body = game:HttpGet(url)}
+        if res and res.Body then
+            local data = HttpService:JSONDecode(res.Body)
+            if data and data.data then
+                local bestServer = nil
+                local minPlayers = math.huge
+                for _, s in ipairs(data.data) do
+                    if s.id ~= game.JobId and s.playing < s.maxPlayers and s.playing < minPlayers then
+                        minPlayers = s.playing
+                        bestServer = s.id
+                    end
+                end
+                if bestServer then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
+                end
+            end
+        end
+    end)
+end
+SmallServerBtn.MouseButton1Click:Connect(HopSmallestServer)
 
 ------------------ KHUNG TÌM VÀ THAM GIA NGƯỜI CHƠI (TRACK & JOIN) ------------------
 local TargetUserContainer = Instance.new("Frame", ServerPage)
@@ -575,12 +669,10 @@ local function FetchUserFullData()
             return
         end
 
-        -- Lấy Avatar
         pcall(function()
             UserAvatarImg.Image = Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
         end)
 
-        -- 1. Lấy thông tin tuổi tài khoản (Created Date API)
         local accountAgeDays = "Không xác định"
         local reqFunc = (syn and syn.request) or (http and http.request) or http_request or request
         
@@ -598,7 +690,6 @@ local function FetchUserFullData()
             end
         end)
 
-        -- 2. Lấy Trạng Thái Online & Game Đang Chơi (Presence API)
         local statusText = "Offline"
         local gameTitle = "Không trong Game"
         
